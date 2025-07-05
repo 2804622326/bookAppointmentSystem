@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'git@github.com:2804622326/appointment-system-project.git',
+                    credentialsId: '840f15d9-c1f8-419c-a704-3eb2f4c40505'  // 有权限的 SSH Key ID
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo 'Installing npm packages...'
+                sh 'npm install'
+                // 如果你用 yarn，改成 sh 'yarn install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo 'Running tests...'
+                sh 'npm test -- --watchAll=false'
+                // 如果你用 yarn，改成 sh 'yarn test --watchAll=false'
+            }
+            post {
+                always {
+                    // 如果你有生成测试报告，这里可以配置收集
+                    echo 'Tests finished.'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building React app for production...'
+                sh 'npm run build'
+                // 如果你用 yarn，改成 sh 'yarn build'
+            }
+        }
+
+        stage('Archive') {
+            steps {
+                echo 'Archiving build output...'
+                archiveArtifacts artifacts: 'build/**'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'React build and tests succeeded!'
+        }
+        failure {
+            echo 'React build or tests failed!'
+        }
+        always {
+            cleanWs()  // 清理 Jenkins 工作区
+        }
+    }
+}
