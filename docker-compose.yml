@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: Liminghao2001
+      MYSQL_DATABASE: pet-care-system
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ./backend
+    ports:
+      - "9192:9192"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/pet-care-system
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Liminghao2001
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
