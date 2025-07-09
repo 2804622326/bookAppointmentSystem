@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_HOST = '34.244.208.35'
+        REMOTE_HOST = '34.246.135.101'
         REMOTE_USER = 'ubuntu'
         REMOTE_DIR  = '/home/ubuntu/bookAppointmentSystem'
         GIT_REPO    = 'https://github.com/2804622326/bookAppointmentSystem.git'
