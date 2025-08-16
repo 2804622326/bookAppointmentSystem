@@ -58,12 +58,15 @@ public class ApplicationSecurityConfig {
 
     /**
      * Centralized CORS configuration allowing both the deployed frontend and local
-     * development origin.
+     * development origins (Vite and React scripts).
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://34.246.135.101:3000", "http://localhost:5174"));
+        configuration.setAllowedOrigins(List.of(
+                "http://34.246.135.101:3000",
+                "http://localhost:5174",
+                "http://localhost:3000"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
