@@ -6,9 +6,6 @@ import com.dailycodework.universalpetcare.security.user.UPCUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.NonNull;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -20,8 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -59,29 +57,29 @@ public class ApplicationSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://34.246.135.101:3000", "http://localhost:5174"));
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(authEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth ->auth.requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
+                .authorizeHttpRequests(auth -> auth.requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
                         .anyRequest().permitAll());
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
-    }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(@NonNull CorsRegistry registry) {
-                registry.addMapping("/**") // Apply to all endpoints
-                        .allowedOrigins("http://localhost:5174") // Allow this origin
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow these HTTP methods
-                        .allowedHeaders("*") // Allow all headers
-                        .allowCredentials(true); // Allow credentials
-            }
-        };
     }
 
 }
