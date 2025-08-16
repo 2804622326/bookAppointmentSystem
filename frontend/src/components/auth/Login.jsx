@@ -60,8 +60,11 @@ const Login = () => {
       clearLoginForm();
       navigate(from, { replace: true });
       window.location.reload();
-    } catch (error) {    
-      setErrorMessage(error.response.data.message);
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        "Unable to reach server. Please try again later.";
+      setErrorMessage(message);
       setShowErrorAlert(true);
     }
   };
