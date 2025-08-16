@@ -56,6 +56,10 @@ public class ApplicationSecurityConfig {
         return authProvider;
     }
 
+    /**
+     * Centralized CORS configuration allowing both the deployed frontend and local
+     * development origin.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
