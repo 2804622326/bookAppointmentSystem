@@ -19,6 +19,8 @@ pipeline {
     FRONTEND_CONTAINER_NAME = 'frontend'
 
     IMAGE_TAG = "${env.GIT_COMMIT?.take(7) ?: env.BUILD_NUMBER}"
+
+    AWS_UP_CRED_ID = 'aws-up'
   }
 
   stages {
@@ -56,7 +58,7 @@ pipeline {
 
     stage('Login to ECR & Push Images') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+        withCredentials([usernamePassword(credentialsId: "${AWS_UP_CRED_ID}", usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
           sh '''
             set -e
             export AWS_DEFAULT_REGION=${AWS_REGION}
@@ -64,6 +66,8 @@ pipeline {
             aws --version
             jq --version >/dev/null 2>&1 || (echo "jq not found"; exit 1)
             docker --version
+
+            aws sts get-caller-identity
 
             aws ecr describe-repositories --repository-names ${ECR_BACKEND_REPO} >/dev/null 2>&1 || \
               aws ecr create-repository --repository-name ${ECR_BACKEND_REPO}
@@ -85,7 +89,7 @@ pipeline {
 
     stage('Update Task Definition & Deploy to ECS') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+        withCredentials([usernamePassword(credentialsId: "${AWS_UP_CRED_ID}", usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
           timeout(time: 20, unit: 'MINUTES') {
             sh '''
               set -e
