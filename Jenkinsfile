@@ -1,6 +1,5 @@
 pipeline {
   agent any
-  options { timestamps() }
 
   environment {
     AWS_REGION     = 'eu-west-1'
@@ -57,16 +56,21 @@ pipeline {
 
     stage('Login to ECR & Push Images') {
       steps {
-        withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
           sh '''
             set -e
+            export AWS_DEFAULT_REGION=${AWS_REGION}
+
+            aws --version
+            jq --version >/dev/null 2>&1 || (echo "jq not found"; exit 1)
+            docker --version
 
             aws ecr describe-repositories --repository-names ${ECR_BACKEND_REPO} >/dev/null 2>&1 || \
               aws ecr create-repository --repository-name ${ECR_BACKEND_REPO}
             aws ecr describe-repositories --repository-names ${ECR_FRONTEND_REPO} >/dev/null 2>&1 || \
               aws ecr create-repository --repository-name ${ECR_FRONTEND_REPO}
 
-            aws ecr get-login-password --region ${AWS_REGION} | \
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
               docker login --username AWS --password-stdin ${ECR_URI}
 
             docker tag upc-backend:build  ${ECR_BACKEND}:${IMAGE_TAG}
@@ -81,10 +85,11 @@ pipeline {
 
     stage('Update Task Definition & Deploy to ECS') {
       steps {
-        withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
           timeout(time: 20, unit: 'MINUTES') {
             sh '''
               set -e
+              export AWS_DEFAULT_REGION=${AWS_REGION}
 
               aws ecs describe-task-definition --task-definition ${TASK_FAMILY} \
                 --query 'taskDefinition' > current-td.json
