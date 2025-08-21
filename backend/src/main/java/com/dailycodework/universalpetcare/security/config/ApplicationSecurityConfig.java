@@ -4,6 +4,7 @@ import com.dailycodework.universalpetcare.security.jwt.AuthTokenFilter;
 import com.dailycodework.universalpetcare.security.jwt.JwtAuthEntryPoint;
 import com.dailycodework.universalpetcare.security.user.UPCUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +30,9 @@ import java.util.List;
 public class ApplicationSecurityConfig {
     private final UPCUserDetailsService userDetailsService;
     private final JwtAuthEntryPoint authEntryPoint;
+
+    @Value("${cors.allowed-origins}")
+    private List<String> allowedOrigins;
 
     private static final List<String> SECURED_URLS = List.of(
            "/api/v1/appointments/book-appointment",
@@ -63,10 +67,7 @@ public class ApplicationSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://54.228.78.4",
-                "http://localhost:5174",
-                "http://localhost:3000"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
