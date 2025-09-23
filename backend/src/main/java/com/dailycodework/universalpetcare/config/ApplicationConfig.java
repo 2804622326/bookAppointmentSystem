@@ -7,6 +7,10 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Configuration
 public class ApplicationConfig {
@@ -44,17 +48,9 @@ public class ApplicationConfig {
         if (user == null) {
             return null;
         }
-        String firstName = user.getFirstName();
-        String lastName = user.getLastName();
-        if (firstName == null && lastName == null) {
-            return null;
-        }
-        if (firstName == null) {
-            return lastName;
-        }
-        if (lastName == null) {
-            return firstName;
-        }
-        return firstName + " " + lastName;
+        String fullName = Stream.of(user.getFirstName(), user.getLastName())
+                .filter(StringUtils::hasText)
+                .collect(Collectors.joining(" "));
+        return fullName.isEmpty() ? null : fullName;
     }
 }
