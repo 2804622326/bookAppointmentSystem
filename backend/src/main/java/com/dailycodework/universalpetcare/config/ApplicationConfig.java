@@ -1,11 +1,10 @@
 package com.dailycodework.universalpetcare.config;
 
-
 import com.dailycodework.universalpetcare.dto.ReviewDto;
 import com.dailycodework.universalpetcare.model.Review;
 import com.dailycodework.universalpetcare.model.User;
-import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,15 +15,23 @@ public class ApplicationConfig {
     public ModelMapper modelMapper(){
         ModelMapper modelMapper = new ModelMapper();
 
-        Converter<User, String> fullNameConverter = context -> toFullName(context.getSource());
-
-        modelMapper.typeMap(Review.class, ReviewDto.class)
-                .addMappings(mapper -> {
-                    mapper.map(src -> toUserId(src.getPatient()), ReviewDto::setPatientId);
-                    mapper.map(src -> toUserId(src.getVeterinarian()), ReviewDto::setVeterinarianId);
-                    mapper.using(fullNameConverter).map(Review::getPatient, ReviewDto::setPatientName);
-                    mapper.using(fullNameConverter).map(Review::getVeterinarian, ReviewDto::setVeterinarianName);
-                });
+        TypeMap<Review, ReviewDto> reviewTypeMap = modelMapper.createTypeMap(Review.class, ReviewDto.class);
+        reviewTypeMap.addMappings(mapper -> {
+            mapper.map(src -> toUserId(src.getPatient()), ReviewDto::setPatientId);
+            mapper.map(src -> toUserId(src.getVeterinarian()), ReviewDto::setVeterinarianId);
+            mapper.skip(ReviewDto::setPatientName);
+            mapper.skip(ReviewDto::setVeterinarianName);
+        });
+        reviewTypeMap.setPostConverter(context -> {
+            Review source = context.getSource();
+            ReviewDto destination = context.getDestination();
+            if (source == null || destination == null) {
+                return destination;
+            }
+            destination.setPatientName(toFullName(source.getPatient()));
+            destination.setVeterinarianName(toFullName(source.getVeterinarian()));
+            return destination;
+        });
 
         return modelMapper;
     }
