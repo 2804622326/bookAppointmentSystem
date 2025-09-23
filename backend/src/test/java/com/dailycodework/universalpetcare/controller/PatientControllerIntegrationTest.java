@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -43,6 +44,8 @@ class PatientControllerIntegrationTest {
     @Test
     void getAllPatients_returnsPersistedPatients() throws Exception {
         Role patientRole = roleRepository.save(new Role("ROLE_PATIENT"));
+        Role managedPatientRole = roleRepository.findByName(patientRole.getName())
+                .orElseThrow();
 
         Patient patient = new Patient();
         patient.setFirstName("Test");
@@ -53,7 +56,7 @@ class PatientControllerIntegrationTest {
         patient.setPassword("password");
         patient.setUserType("PATIENT");
         patient.setEnabled(true);
-        patient.setRoles(Set.of(patientRole));
+        patient.setRoles(new HashSet<>(Set.of(managedPatientRole)));
         patientRepository.save(patient);
 
         mockMvc.perform(get("/api/v1/patients/get-all-patients"))

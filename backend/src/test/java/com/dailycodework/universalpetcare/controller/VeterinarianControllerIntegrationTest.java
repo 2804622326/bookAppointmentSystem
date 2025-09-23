@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -44,6 +45,8 @@ class VeterinarianControllerIntegrationTest {
     @Test
     void getAllVeterinarians_returnsPersistedVeterinarians() throws Exception {
         Role vetRole = roleRepository.save(new Role("ROLE_VET"));
+        Role managedVetRole = roleRepository.findByName(vetRole.getName())
+                .orElseThrow();
 
         Veterinarian firstVet = new Veterinarian();
         firstVet.setFirstName("Alex");
@@ -55,7 +58,7 @@ class VeterinarianControllerIntegrationTest {
         firstVet.setUserType("VET");
         firstVet.setEnabled(true);
         firstVet.setSpecialization("Dermatology");
-        firstVet.setRoles(Set.of(vetRole));
+        firstVet.setRoles(new HashSet<>(Set.of(managedVetRole)));
         veterinarianRepository.save(firstVet);
 
         Veterinarian secondVet = new Veterinarian();
@@ -68,7 +71,7 @@ class VeterinarianControllerIntegrationTest {
         secondVet.setUserType("VET");
         secondVet.setEnabled(true);
         secondVet.setSpecialization("Surgery");
-        secondVet.setRoles(Set.of(vetRole));
+        secondVet.setRoles(new HashSet<>(Set.of(managedVetRole)));
         veterinarianRepository.save(secondVet);
 
         mockMvc.perform(get("/api/v1/veterinarians/get-all-veterinarians"))
