@@ -1,9 +1,9 @@
 package com.dailycodework.universalpetcare.dto;
 
+import com.dailycodework.universalpetcare.config.ApplicationConfig;
 import com.dailycodework.universalpetcare.model.Pet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.modelmapper.ModelMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +13,7 @@ class EntityConverterPetDtoTest {
 
     @BeforeEach
     void setUp() {
-        converter = new EntityConverter<>(new ModelMapper());
+        converter = new EntityConverter<>(new ApplicationConfig().modelMapper());
     }
 
     @Test

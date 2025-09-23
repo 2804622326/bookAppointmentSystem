@@ -1,10 +1,10 @@
 package com.dailycodework.universalpetcare.dto;
 
+import com.dailycodework.universalpetcare.config.ApplicationConfig;
 import com.dailycodework.universalpetcare.enums.AppointmentStatus;
 import com.dailycodework.universalpetcare.model.Appointment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.modelmapper.ModelMapper;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,7 +17,7 @@ class EntityConverterTest {
 
     @BeforeEach
     void setUp() {
-        converter = new EntityConverter<>(new ModelMapper());
+        converter = new EntityConverter<>(new ApplicationConfig().modelMapper());
     }
 
     @Test
