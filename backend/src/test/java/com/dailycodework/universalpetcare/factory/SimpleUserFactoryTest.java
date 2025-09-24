@@ -7,7 +7,6 @@ import com.dailycodework.universalpetcare.model.User;
 import com.dailycodework.universalpetcare.model.Veterinarian;
 import com.dailycodework.universalpetcare.repository.UserRepository;
 import com.dailycodework.universalpetcare.request.RegistrationRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,10 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SimpleUSerFactoryTest {
+class SimpleUserFactoryTest {
 
     @Mock
     private UserRepository userRepository;
@@ -50,17 +51,13 @@ class SimpleUSerFactoryTest {
         return request;
     }
 
-    @BeforeEach
-    void setUp() {
-        when(passwordEncoder.encode("password")).thenReturn("encoded");
-    }
-
     @Test
     void createUser_whenTypeIsVet_returnsVeterinarian() {
         RegistrationRequest request = buildRequest("vet");
         Veterinarian veterinarian = new Veterinarian();
 
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(veterinarianFactory.createVeterinarian(any(RegistrationRequest.class))).thenReturn(veterinarian);
 
         User created = simpleUserFactory.createUser(request);
@@ -77,6 +74,7 @@ class SimpleUSerFactoryTest {
         Patient patient = new Patient();
 
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(patientFactory.createPatient(any(RegistrationRequest.class))).thenReturn(patient);
 
         User created = simpleUserFactory.createUser(request);
@@ -92,6 +90,7 @@ class SimpleUSerFactoryTest {
         Admin admin = new Admin();
 
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(adminFactory.createAdmin(any(RegistrationRequest.class))).thenReturn(admin);
 
         User created = simpleUserFactory.createUser(request);
@@ -109,12 +108,17 @@ class SimpleUSerFactoryTest {
         assertThatThrownBy(() -> simpleUserFactory.createUser(request))
                 .isInstanceOf(AlreadyExistsException.class)
                 .hasMessageContaining("user@example.com");
+
+        verify(userRepository).existsByEmail("user@example.com");
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(veterinarianFactory, patientFactory, adminFactory, passwordEncoder);
     }
 
     @Test
     void createUser_whenTypeIsUnknown_throwsIllegalArgumentException() {
         RegistrationRequest request = buildRequest("UNKNOWN");
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
 
         assertThatThrownBy(() -> simpleUserFactory.createUser(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -125,6 +129,7 @@ class SimpleUSerFactoryTest {
     void createUser_whenTypeIsBlank_throwsIllegalArgumentException() {
         RegistrationRequest request = buildRequest("   ");
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
 
         assertThatThrownBy(() -> simpleUserFactory.createUser(request))
                 .isInstanceOf(IllegalArgumentException.class)
