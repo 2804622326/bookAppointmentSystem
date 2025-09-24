@@ -1,5 +1,6 @@
 package com.dailycodework.universalpetcare.dto;
 
+import com.dailycodework.universalpetcare.config.ApplicationConfig;
 import com.dailycodework.universalpetcare.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ class EntityConverterPatientDtoTest {
 
     @BeforeEach
     void setUp() {
-        ModelMapper modelMapper = new ModelMapper();
+        ModelMapper modelMapper = new ApplicationConfig().modelMapper();
         modelMapper.typeMap(User.class, PatientDto.class)
                 .addMapping(User::getId, PatientDto::setPatientId);
         entityConverter = new EntityConverter<>(modelMapper);
@@ -37,5 +38,4 @@ class EntityConverterPatientDtoTest {
         assertEquals("FEMALE", dto.getGender());
         assertEquals("1234567890", dto.getPhoneNumber());
     }
-
 }

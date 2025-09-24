@@ -56,9 +56,8 @@ class VeterinarianServiceTest {
 
     @Test
     void testGetAllVeterinariansWithDetails_returnsMappedList() throws SQLException {
-        Veterinarian vet = mock(Veterinarian.class);
+        Veterinarian vet = new Veterinarian();
         vet.setId(1L);
-        byte[] photoBytes = new byte[]{1, 2, 3};
 
         UserDto dto = new UserDto();
         dto.setId(1L);
@@ -67,7 +66,7 @@ class VeterinarianServiceTest {
         when(entityConverter.mapEntityToDto(vet, UserDto.class)).thenReturn(dto);
         when(reviewService.getAverageRatingForVet(1L)).thenReturn(4.2);
         when(reviewRepository.countByVeterinarianId(1L)).thenReturn(3L);
-        when(vet.getPhoto()).thenReturn(null);
+        vet.setPhoto(null);
 
         List<UserDto> vets = veterinarianService.getAllVeterinariansWithDetails();
 
@@ -81,7 +80,6 @@ class VeterinarianServiceTest {
     void testGetAllVeterinariansWithDetails_photoPresent_setsPhotoBytes() throws SQLException {
         Veterinarian vet = new Veterinarian();
         vet.setId(1L);
-        PhotoService photoServiceSpy = spy(photoService);
 
         when(userRepository.findAllByUserType("VET")).thenReturn(List.of(vet));
         when(entityConverter.mapEntityToDto(vet, UserDto.class)).thenReturn(new UserDto());

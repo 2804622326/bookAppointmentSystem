@@ -10,6 +10,7 @@ import com.dailycodework.universalpetcare.service.role.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Component
+@Profile("!test")
 @Transactional
 @RequiredArgsConstructor
 public class DefaultDataInitializer implements ApplicationListener<ApplicationReadyEvent> {

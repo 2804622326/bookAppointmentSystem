@@ -45,7 +45,7 @@ class JwtUtilsTest {
         assertNotNull(token);
 
         String username = jwtUtils.getUserNameFromToken(token);
-        assertEquals("test@example.com", username);
+        assertEquals("user@example.com", username);
     }
 
     @Test

@@ -1,9 +1,8 @@
 package com.dailycodework.universalpetcare.email;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.AllArgsConstructor;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -14,25 +13,36 @@ import java.util.Properties;
 
 @Component
 public class EmailService {
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
 
-
-    @PostConstruct
-    private void init() {
-        mailSender = createMailSender();
+    public EmailService() {
+        this(createMailSender());
     }
 
-    public void sendEmail(String to, String subject, String senderName, String mailContent) throws MessagingException, UnsupportedEncodingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        var messageHelper = new MimeMessageHelper(message);
-        messageHelper.setFrom(EmailProperties.DEFAULT_USERNAME, senderName);
-        messageHelper.setTo(to);
-        messageHelper.setSubject(subject);
-        messageHelper.setText(mailContent, true);
-        mailSender.send(message);
+    EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
     }
-    
-    private JavaMailSender createMailSender() {
+
+    public void sendEmail(String to, String subject, String senderName, String mailContent)
+            throws MessagingException, UnsupportedEncodingException {
+        if (mailSender == null) {
+            throw new IllegalStateException("JavaMailSender must not be null");
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            var messageHelper = new MimeMessageHelper(message);
+            messageHelper.setFrom(EmailProperties.DEFAULT_USERNAME, senderName);
+            messageHelper.setTo(to);
+            messageHelper.setSubject(subject);
+            messageHelper.setText(mailContent, true);
+            mailSender.send(message);
+        } catch (MailException ex) {
+            throw new EmailSendException("Failed to send email", ex);
+        }
+    }
+
+    private static JavaMailSender createMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(EmailProperties.DEFAULT_HOST);
         mailSender.setPort(EmailProperties.DEFAULT_PORT);

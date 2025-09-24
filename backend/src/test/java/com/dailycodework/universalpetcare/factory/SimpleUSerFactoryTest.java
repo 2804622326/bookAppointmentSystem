@@ -9,13 +9,20 @@ import com.dailycodework.universalpetcare.repository.UserRepository;
 import com.dailycodework.universalpetcare.request.RegistrationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-class SimpleUserFactoryTest {
+@ExtendWith(MockitoExtension.class)
+class SimpleUSerFactoryTest {
 
     @Mock
     private UserRepository userRepository;
@@ -35,90 +42,92 @@ class SimpleUserFactoryTest {
     @InjectMocks
     private SimpleUSerFactory simpleUserFactory;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testCreateUser_Vet() {
-        RegistrationRequest request = new RegistrationRequest();
-        request.setEmail("vet@example.com");
-        request.setPassword("pass");
-        request.setUserType("VET");
-
-        Veterinarian vet = new Veterinarian();
-
-        when(userRepository.existsByEmail("vet@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("pass")).thenReturn("encodedPass");
-        when(veterinarianFactory.createVeterinarian(request)).thenReturn(vet);
-
-        User result = simpleUserFactory.createUser(request);
-
-        verify(veterinarianFactory).createVeterinarian(request);
-        assertEquals(vet, result);
-    }
-
-    @Test
-    void testCreateUser_Patient() {
-        RegistrationRequest request = new RegistrationRequest();
-        request.setEmail("patient@example.com");
-        request.setPassword("pass");
-        request.setUserType("PATIENT");
-
-        Patient patient = new Patient();
-
-        when(userRepository.existsByEmail("patient@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("pass")).thenReturn("encodedPass");
-        when(patientFactory.createPatient(request)).thenReturn(patient);
-
-        User result = simpleUserFactory.createUser(request);
-
-        verify(patientFactory).createPatient(request);
-        assertEquals(patient, result);
-    }
-
-    @Test
-    void testCreateUser_Admin() {
-        RegistrationRequest request = new RegistrationRequest();
-        request.setEmail("admin@example.com");
-        request.setPassword("pass");
-        request.setUserType("ADMIN");
-
-        Admin admin = new Admin();
-
-        when(userRepository.existsByEmail("admin@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("pass")).thenReturn("encodedPass");
-        when(adminFactory.createAdmin(request)).thenReturn(admin);
-
-        User result = simpleUserFactory.createUser(request);
-
-        verify(adminFactory).createAdmin(request);
-        assertEquals(admin, result);
-    }
-
-    @Test
-    void testCreateUser_EmailExists() {
-        RegistrationRequest request = new RegistrationRequest();
-        request.setEmail("duplicate@example.com");
-
-        when(userRepository.existsByEmail("duplicate@example.com")).thenReturn(true);
-
-        assertThrows(AlreadyExistsException.class, () -> simpleUserFactory.createUser(request));
-    }
-
-    @Test
-    void testCreateUser_InvalidType() {
+    private RegistrationRequest buildRequest(String userType) {
         RegistrationRequest request = new RegistrationRequest();
         request.setEmail("user@example.com");
-        request.setPassword("pass");
-        request.setUserType("UNKNOWN");
+        request.setPassword("password");
+        request.setUserType(userType);
+        return request;
+    }
+
+    @BeforeEach
+    void setUp() {
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
+    }
+
+    @Test
+    void createUser_whenTypeIsVet_returnsVeterinarian() {
+        RegistrationRequest request = buildRequest("vet");
+        Veterinarian veterinarian = new Veterinarian();
 
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("pass")).thenReturn("encodedPass");
+        when(veterinarianFactory.createVeterinarian(any(RegistrationRequest.class))).thenReturn(veterinarian);
 
-        User result = simpleUserFactory.createUser(request);
+        User created = simpleUserFactory.createUser(request);
 
-        assertNull(result);
+        verify(veterinarianFactory).createVeterinarian(request);
+        assertThat(created).isSameAs(veterinarian);
+        assertThat(request.getUserType()).isEqualTo("VET");
+        assertThat(request.getPassword()).isEqualTo("encoded");
+    }
+
+    @Test
+    void createUser_whenTypeIsPatient_returnsPatient() {
+        RegistrationRequest request = buildRequest("patient");
+        Patient patient = new Patient();
+
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(patientFactory.createPatient(any(RegistrationRequest.class))).thenReturn(patient);
+
+        User created = simpleUserFactory.createUser(request);
+
+        verify(patientFactory).createPatient(request);
+        assertThat(created).isSameAs(patient);
+        assertThat(request.getPassword()).isEqualTo("encoded");
+    }
+
+    @Test
+    void createUser_whenTypeIsAdmin_returnsAdmin() {
+        RegistrationRequest request = buildRequest("ADMIN");
+        Admin admin = new Admin();
+
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(adminFactory.createAdmin(any(RegistrationRequest.class))).thenReturn(admin);
+
+        User created = simpleUserFactory.createUser(request);
+
+        verify(adminFactory).createAdmin(request);
+        assertThat(created).isSameAs(admin);
+        assertThat(request.getPassword()).isEqualTo("encoded");
+    }
+
+    @Test
+    void createUser_whenEmailAlreadyExists_throwsAlreadyExistsException() {
+        RegistrationRequest request = buildRequest("VET");
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> simpleUserFactory.createUser(request))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessageContaining("user@example.com");
+    }
+
+    @Test
+    void createUser_whenTypeIsUnknown_throwsIllegalArgumentException() {
+        RegistrationRequest request = buildRequest("UNKNOWN");
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> simpleUserFactory.createUser(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported user type");
+    }
+
+    @Test
+    void createUser_whenTypeIsBlank_throwsIllegalArgumentException() {
+        RegistrationRequest request = buildRequest("   ");
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> simpleUserFactory.createUser(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("User type");
     }
 }

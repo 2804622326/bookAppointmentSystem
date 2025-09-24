@@ -1,8 +1,8 @@
 package com.dailycodework.universalpetcare.factory;
 
-import com.dailycodework.universalpetcare.model.Admin;
+import com.dailycodework.universalpetcare.model.Patient;
 import com.dailycodework.universalpetcare.model.Role;
-import com.dailycodework.universalpetcare.repository.AdminRepository;
+import com.dailycodework.universalpetcare.repository.PatientRepository;
 import com.dailycodework.universalpetcare.request.RegistrationRequest;
 import com.dailycodework.universalpetcare.service.role.IRoleService;
 import com.dailycodework.universalpetcare.service.user.UserAttributesMapper;
@@ -20,10 +20,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AdminFactoryTest {
+class PatientFactoryTest {
 
     @Mock
-    private AdminRepository adminRepository;
+    private PatientRepository patientRepository;
 
     @Mock
     private UserAttributesMapper userAttributesMapper;
@@ -32,24 +32,24 @@ class AdminFactoryTest {
     private IRoleService roleService;
 
     @InjectMocks
-    private AdminFactory adminFactory;
+    private PatientFactory patientFactory;
 
     @Test
-    void createAdmin_whenCalled_mapsAttributesAssignsRolesAndPersists() {
+    void createPatient_whenCalled_assignsRolesMapsAttributesAndPersists() {
         RegistrationRequest request = new RegistrationRequest();
-        Admin persisted = new Admin();
+        Patient persisted = new Patient();
         Set<Role> roles = Set.of(new Role());
 
-        when(roleService.setUserRole("ADMIN")).thenReturn(roles);
-        ArgumentCaptor<Admin> adminCaptor = ArgumentCaptor.forClass(Admin.class);
-        when(adminRepository.save(adminCaptor.capture())).thenReturn(persisted);
+        when(roleService.setUserRole("PATIENT")).thenReturn(roles);
+        ArgumentCaptor<Patient> captor = ArgumentCaptor.forClass(Patient.class);
+        when(patientRepository.save(captor.capture())).thenReturn(persisted);
 
-        Admin created = adminFactory.createAdmin(request);
+        Patient result = patientFactory.createPatient(request);
 
-        verify(roleService).setUserRole("ADMIN");
-        verify(userAttributesMapper).setCommonAttributes(request, adminCaptor.getValue());
-        verify(adminRepository).save(adminCaptor.getValue());
-        assertThat(adminCaptor.getValue().getRoles()).isEqualTo(roles);
-        assertThat(created).isSameAs(persisted);
+        verify(roleService).setUserRole("PATIENT");
+        verify(userAttributesMapper).setCommonAttributes(request, captor.getValue());
+        verify(patientRepository).save(captor.getValue());
+        assertThat(captor.getValue().getRoles()).isEqualTo(roles);
+        assertThat(result).isSameAs(persisted);
     }
 }

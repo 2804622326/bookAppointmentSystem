@@ -1,50 +1,62 @@
 package com.dailycodework.universalpetcare.email;
 
 import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 
 import java.io.UnsupportedEncodingException;
 
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
 
-    private JavaMailSender javaMailSender;
+    @Mock
+    private JavaMailSender mailSender;
+
     private EmailService emailService;
 
     @BeforeEach
     void setUp() {
-        javaMailSender = mock(JavaMailSender.class);
-        emailService = new EmailService() {
-            @Override
-            public void sendEmail(String to, String subject, String senderName, String mailContent)
-                    throws MessagingException, UnsupportedEncodingException {
-                MimeMessage message = javaMailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message);
-                helper.setFrom(EmailProperties.DEFAULT_USERNAME, senderName);
-                helper.setTo(to);
-                helper.setSubject(subject);
-                helper.setText(mailContent, true);
-                javaMailSender.send(message);
-            }
-
-
-        };
+        emailService = new EmailService(mailSender);
     }
 
     @Test
-    void testSendEmail() throws MessagingException, UnsupportedEncodingException {
-        MimeMessage mimeMessage = mock(MimeMessage.class);
-        when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+    void sendEmail_whenMailSenderCreatesMessage_sendsSuccessfully() throws MessagingException, UnsupportedEncodingException {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        emailService.sendEmail("test@example.com", "Subject", "Sender", "<h1>Hello</h1>");
+        emailService.sendEmail("to@example.com", "Subject", "Sender", "<p>Body</p>");
 
-        verify(javaMailSender, times(1)).createMimeMessage();
-        verify(javaMailSender, times(1)).send(mimeMessage);
+        verify(mailSender).createMimeMessage();
+        verify(mailSender).send(mimeMessage);
+    }
+
+    @Test
+    void sendEmail_whenMailSenderThrowsMailException_wrapsInEmailSendException()
+            throws MessagingException, UnsupportedEncodingException {
+        when(mailSender.createMimeMessage()).thenThrow(new MailPreparationException("boom"));
+
+        assertThatThrownBy(() -> emailService.sendEmail("to@example.com", "Subject", "Sender", "Body"))
+                .isInstanceOf(EmailSendException.class)
+                .hasMessageContaining("Failed to send email");
+    }
+
+    @Test
+    void sendEmail_whenMailSenderNotInjected_throwsIllegalStateException() {
+        EmailService serviceWithoutSender = new EmailService(null);
+
+        assertThatThrownBy(() -> serviceWithoutSender.sendEmail("a", "b", "c", "d"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JavaMailSender");
     }
 }
