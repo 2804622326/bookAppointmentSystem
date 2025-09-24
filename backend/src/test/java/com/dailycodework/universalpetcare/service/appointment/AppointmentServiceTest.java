@@ -241,6 +241,57 @@ class AppointmentServiceTest {
     }
 
     @Test
+    void testGetUserAppointments_handlesNullDtoAndNullPets() {
+        Appointment appointment = new Appointment();
+        appointment.setId(42L);
+        appointment.setAppointmentDate(LocalDate.of(2024, 1, 10));
+        appointment.setAppointmentTime(LocalTime.of(9, 30));
+        appointment.setCreatedAt(LocalDate.of(2023, 12, 30));
+        appointment.setReason("Checkup");
+        appointment.setStatus(AppointmentStatus.APPROVED);
+        appointment.setAppointmentNo("APPT-42");
+        appointment.setPets(null);
+
+        when(appointmentRepository.findAllByUserId(7L)).thenReturn(List.of(appointment));
+        when(appointmentConverter.mapEntityToDto(appointment, AppointmentDto.class)).thenReturn(null);
+
+        List<AppointmentDto> results = appointmentService.getUserAppointments(7L);
+
+        assertEquals(1, results.size());
+        AppointmentDto dto = results.get(0);
+        assertNotNull(dto);
+        assertEquals(42L, dto.getId());
+        assertEquals(LocalDate.of(2024, 1, 10), dto.getAppointmentDate());
+        assertEquals(LocalTime.of(9, 30), dto.getAppointmentTime());
+        assertEquals(LocalDate.of(2023, 12, 30), dto.getCreatedAt());
+        assertEquals("Checkup", dto.getReason());
+        assertEquals(AppointmentStatus.APPROVED, dto.getStatus());
+        assertEquals("APPT-42", dto.getAppointmentNo());
+        assertNotNull(dto.getPets());
+        assertTrue(dto.getPets().isEmpty());
+    }
+
+    @Test
+    void testGetUserAppointments_filtersNullPetDtos() {
+        Appointment appointment = new Appointment();
+        Pet firstPet = new Pet();
+        Pet secondPet = new Pet();
+        appointment.setPets(Arrays.asList(firstPet, secondPet));
+        AppointmentDto dto = new AppointmentDto();
+        PetDto firstPetDto = new PetDto();
+
+        when(appointmentRepository.findAllByUserId(8L)).thenReturn(List.of(appointment));
+        when(appointmentConverter.mapEntityToDto(appointment, AppointmentDto.class)).thenReturn(dto);
+        when(petConverter.mapEntityToDto(firstPet, PetDto.class)).thenReturn(firstPetDto);
+        when(petConverter.mapEntityToDto(secondPet, PetDto.class)).thenReturn(null);
+
+        List<AppointmentDto> results = appointmentService.getUserAppointments(8L);
+
+        assertEquals(1, results.size());
+        assertEquals(List.of(firstPetDto), results.get(0).getPets());
+    }
+
+    @Test
     void testGetAppointmentIds_returnsIds() {
         Appointment a1 = new Appointment();
         a1.setId(11L);

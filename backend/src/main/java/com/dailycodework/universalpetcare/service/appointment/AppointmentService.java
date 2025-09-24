@@ -105,9 +105,23 @@ public class AppointmentService implements IAppointmentService {
         return appointments.stream()
                 .map(appointment -> {
                     AppointmentDto appointmentDto = entityConverter.mapEntityToDto(appointment, AppointmentDto.class);
-                    List<PetDto> petDto = appointment.getPets()
+                    if (appointmentDto == null) {
+                        appointmentDto = new AppointmentDto();
+                        appointmentDto.setId(appointment.getId());
+                        appointmentDto.setAppointmentDate(appointment.getAppointmentDate());
+                        appointmentDto.setAppointmentTime(appointment.getAppointmentTime());
+                        appointmentDto.setCreatedAt(appointment.getCreatedAt());
+                        appointmentDto.setReason(appointment.getReason());
+                        appointmentDto.setStatus(appointment.getStatus());
+                        appointmentDto.setAppointmentNo(appointment.getAppointmentNo());
+                    }
+
+                    List<PetDto> petDto = Optional.ofNullable(appointment.getPets())
+                            .orElseGet(Collections::emptyList)
                             .stream()
-                            .map(pet -> petEntityConverter.mapEntityToDto(pet, PetDto.class)).toList();
+                            .map(pet -> petEntityConverter.mapEntityToDto(pet, PetDto.class))
+                            .filter(Objects::nonNull)
+                            .toList();
                     appointmentDto.setPets(petDto);
                     return appointmentDto;
                 }).toList();
