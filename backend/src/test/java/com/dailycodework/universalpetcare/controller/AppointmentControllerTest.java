@@ -85,6 +85,19 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void testBookAppointment_unexpectedError() {
+        BookAppointmentRequest request = new BookAppointmentRequest();
+        when(appointmentService.createAppointment(request, 1L, 2L))
+                .thenThrow(new IllegalStateException("boom"));
+
+        ResponseEntity<ApiResponse> response = controller.bookAppointment(request, 1L, 2L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("boom", response.getBody().getMessage());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
     void testGetAppointmentById_success() {
         Appointment appointment = new Appointment();
         when(appointmentService.getAppointmentById(1L)).thenReturn(appointment);
@@ -106,12 +119,45 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void testGetAppointmentByNo_success() {
+        Appointment appointment = new Appointment();
+        when(appointmentService.getAppointmentByNo("A-1")).thenReturn(appointment);
+
+        ResponseEntity<ApiResponse> response = controller.getAppointmentByNo("A-1");
+
+        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(appointment, response.getBody().getData());
+    }
+
+    @Test
+    void testGetAppointmentByNo_notFound() {
+        when(appointmentService.getAppointmentByNo("missing"))
+                .thenThrow(new ResourceNotFoundException("not found"));
+
+        ResponseEntity<ApiResponse> response = controller.getAppointmentByNo("missing");
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("not found", response.getBody().getMessage());
+    }
+
+    @Test
     void testDeleteAppointment_success() {
         ResponseEntity<ApiResponse> response = controller.deleteAppointmentById(1L);
 
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(FeedBackMessage.APPOINTMENT_DELETE_SUCCESS, response.getBody().getMessage());
         verify(appointmentService).deleteAppointment(1L);
+    }
+
+    @Test
+    void testDeleteAppointment_notFound() {
+        doThrow(new ResourceNotFoundException("missing"))
+                .when(appointmentService).deleteAppointment(9L);
+
+        ResponseEntity<ApiResponse> response = controller.deleteAppointmentById(9L);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("missing", response.getBody().getMessage());
     }
 
     @Test
@@ -124,6 +170,18 @@ class AppointmentControllerTest {
 
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(updated, response.getBody().getData());
+    }
+
+    @Test
+    void testUpdateAppointment_illegalState() {
+        AppointmentUpdateRequest request = new AppointmentUpdateRequest();
+        when(appointmentService.updateAppointment(4L, request))
+                .thenThrow(new IllegalStateException("nope"));
+
+        ResponseEntity<ApiResponse> response = controller.updateAppointment(4L, request);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("nope", response.getBody().getMessage());
     }
 
     @Test
@@ -150,6 +208,18 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void testApproveAppointment_illegalState() {
+        when(appointmentService.approveAppointment(3L))
+                .thenThrow(new IllegalStateException("bad state"));
+
+        ResponseEntity<ApiResponse> response = controller.approveAppointment(3L);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("bad state", response.getBody().getMessage());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
     void testDeclineAppointment_success() {
         Appointment mock = new Appointment();
         when(appointmentService.declineAppointment(1L)).thenReturn(mock);
@@ -159,6 +229,18 @@ class AppointmentControllerTest {
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(mock, response.getBody().getData());
         verify(publisher).publishEvent(any(AppointmentDeclinedEvent.class));
+    }
+
+    @Test
+    void testDeclineAppointment_illegalState() {
+        when(appointmentService.declineAppointment(8L))
+                .thenThrow(new IllegalStateException("bad decline"));
+
+        ResponseEntity<ApiResponse> response = controller.declineAppointment(8L);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("bad decline", response.getBody().getMessage());
+        verifyNoInteractions(publisher);
     }
 
     @Test

@@ -2,18 +2,14 @@ package com.dailycodework.universalpetcare.security.jwt;
 
 import com.dailycodework.universalpetcare.security.user.UPCUserDetails;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.security.Key;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class JwtUtilsTest {
 
@@ -73,5 +69,42 @@ class JwtUtilsTest {
     void testGetUserNameFromInvalidToken_shouldThrowException() {
         String invalidToken = "malformed.token.value";
         assertThrows(JwtException.class, () -> jwtUtils.getUserNameFromToken(invalidToken));
+    }
+
+    @Test
+    void testValidateToken_expiredTokenThrowsException() {
+        UPCUserDetails userDetails = new UPCUserDetails(
+                3L,
+                "expired@example.com",
+                "secret",
+                true,
+                List.of(new SimpleGrantedAuthority("ROLE_VET"))
+        );
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        jwtUtils.jwtExpirationMs = -1000; // make the token expire immediately
+
+        String token = jwtUtils.generateTokenForUser(authentication);
+
+        assertThrows(JwtException.class, () -> jwtUtils.validateToken(token));
+    }
+
+    @Test
+    void testValidateToken_withDifferentSigningKeyThrowsException() {
+        UPCUserDetails userDetails = new UPCUserDetails(
+                4L,
+                "sign@example.com",
+                "secret",
+                true,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        String token = jwtUtils.generateTokenForUser(authentication);
+
+        JwtUtils other = new JwtUtils();
+        other.jwtSecret = "c2Vjb25kLXJhbmRvbS1zZWNyZXQtZm9yLXRlc3Rpbmc="; // base64 for "second-random-secret-for-testing"
+        other.jwtExpirationMs = expirationMs;
+
+        assertThrows(JwtException.class, () -> other.validateToken(token));
     }
 }

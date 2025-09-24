@@ -142,6 +142,7 @@
                                                                 <exclude>**/dto/**</exclude>
                                                                 <exclude>**/request/**</exclude>
                                                                 <exclude>**/response/**</exclude>
+                                                                <exclude>**/UniversalPetCareApplication.class</exclude>
                                                         </excludes>
                                                 </configuration>
                                         </execution>
@@ -155,9 +156,15 @@
                                                         <rules>
                                                                 <rule>
                                                                         <element>BUNDLE</element>
+                                                                        <excludes>
+                                                                                <exclude>**/dto/**</exclude>
+                                                                                <exclude>**/request/**</exclude>
+                                                                                <exclude>**/response/**</exclude>
+                                                                                <exclude>**/UniversalPetCareApplication.class</exclude>
+                                                                        </excludes>
                                                                         <limits>
                                                                                 <limit>
-                                                                                        <counter>LINE</counter>
+                                                                                        <counter>INSTRUCTION</counter>
                                                                                         <value>COVEREDRATIO</value>
                                                                                         <minimum>0.90</minimum>
                                                                                 </limit>

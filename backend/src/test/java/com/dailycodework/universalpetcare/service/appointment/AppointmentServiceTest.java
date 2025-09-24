@@ -20,6 +20,7 @@ import org.mockito.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -199,5 +200,117 @@ class AppointmentServiceTest {
         when(appointmentRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> appointmentService.deleteAppointment(1L));
+    }
+
+    @Test
+    void testApproveAppointment_invalidStatusThrows() {
+        Appointment appt = new Appointment();
+        appt.setStatus(AppointmentStatus.APPROVED);
+
+        when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appt));
+
+        assertThrows(IllegalStateException.class, () -> appointmentService.approveAppointment(5L));
+    }
+
+    @Test
+    void testDeclineAppointment_invalidStatusThrows() {
+        Appointment appt = new Appointment();
+        appt.setStatus(AppointmentStatus.CANCELLED);
+
+        when(appointmentRepository.findById(6L)).thenReturn(Optional.of(appt));
+
+        assertThrows(IllegalStateException.class, () -> appointmentService.declineAppointment(6L));
+    }
+
+    @Test
+    void testGetUserAppointments_mapsAppointmentAndPets() {
+        Appointment appointment = new Appointment();
+        Pet pet = new Pet();
+        appointment.setPets(List.of(pet));
+        AppointmentDto dto = new AppointmentDto();
+        PetDto petDto = new PetDto();
+
+        when(appointmentRepository.findAllByUserId(3L)).thenReturn(List.of(appointment));
+        when(appointmentConverter.mapEntityToDto(appointment, AppointmentDto.class)).thenReturn(dto);
+        when(petConverter.mapEntityToDto(pet, PetDto.class)).thenReturn(petDto);
+
+        List<AppointmentDto> results = appointmentService.getUserAppointments(3L);
+
+        assertEquals(1, results.size());
+        assertEquals(List.of(petDto), results.get(0).getPets());
+    }
+
+    @Test
+    void testGetAppointmentIds_returnsIds() {
+        Appointment a1 = new Appointment();
+        a1.setId(11L);
+        Appointment a2 = new Appointment();
+        a2.setId(12L);
+
+        when(appointmentRepository.findAll()).thenReturn(List.of(a1, a2));
+
+        List<Long> ids = appointmentService.getAppointmentIds();
+
+        assertEquals(List.of(11L, 12L), ids);
+    }
+
+    @Test
+    void testSetAppointmentStatus_transitionsApprovedToUpcoming() {
+        Appointment appointment = new Appointment();
+        appointment.setStatus(AppointmentStatus.APPROVED);
+        appointment.setAppointmentDate(LocalDate.now().plusDays(1));
+        appointment.setAppointmentTime(LocalTime.now().plusMinutes(10));
+
+        when(appointmentRepository.findById(20L)).thenReturn(Optional.of(appointment));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        appointmentService.setAppointmentStatus(20L);
+
+        assertEquals(AppointmentStatus.UP_COMING, appointment.getStatus());
+    }
+
+    @Test
+    void testSetAppointmentStatus_transitionsUpcomingToOngoing() {
+        Appointment appointment = new Appointment();
+        appointment.setStatus(AppointmentStatus.UP_COMING);
+        appointment.setAppointmentDate(LocalDate.now());
+        appointment.setAppointmentTime(LocalTime.now().minusMinutes(1).truncatedTo(ChronoUnit.MINUTES));
+
+        when(appointmentRepository.findById(21L)).thenReturn(Optional.of(appointment));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        appointmentService.setAppointmentStatus(21L);
+
+        assertEquals(AppointmentStatus.ON_GOING, appointment.getStatus());
+    }
+
+    @Test
+    void testSetAppointmentStatus_transitionsOngoingToCompleted() {
+        Appointment appointment = new Appointment();
+        appointment.setStatus(AppointmentStatus.ON_GOING);
+        appointment.setAppointmentDate(LocalDate.now().minusDays(1));
+        appointment.setAppointmentTime(LocalTime.now().minusHours(1));
+
+        when(appointmentRepository.findById(22L)).thenReturn(Optional.of(appointment));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        appointmentService.setAppointmentStatus(22L);
+
+        assertEquals(AppointmentStatus.COMPLETED, appointment.getStatus());
+    }
+
+    @Test
+    void testSetAppointmentStatus_waitingPastAppointmentBecomesNotApproved() {
+        Appointment appointment = new Appointment();
+        appointment.setStatus(AppointmentStatus.WAITING_FOR_APPROVAL);
+        appointment.setAppointmentDate(LocalDate.now().minusDays(1));
+        appointment.setAppointmentTime(LocalTime.now().minusHours(3));
+
+        when(appointmentRepository.findById(23L)).thenReturn(Optional.of(appointment));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        appointmentService.setAppointmentStatus(23L);
+
+        assertEquals(AppointmentStatus.NOT_APPROVED, appointment.getStatus());
     }
 }
