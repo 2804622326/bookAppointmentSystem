@@ -35,8 +35,8 @@ public class AppointmentService implements IAppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final IPetService petService;
-    private final EntityConverter<Appointment, AppointmentDto> entityConverter;
-    private final EntityConverter<Pet, PetDto> petEntityConverter;
+    private final EntityConverter<Appointment, AppointmentDto> appointmentConverter;
+    private final EntityConverter<Pet, PetDto> petConverter;
 
 
 
@@ -103,28 +103,43 @@ public class AppointmentService implements IAppointmentService {
     public List<AppointmentDto> getUserAppointments(Long userId) {
         List<Appointment> appointments = appointmentRepository.findAllByUserId(userId);
         return appointments.stream()
-                .map(appointment -> {
-                    AppointmentDto appointmentDto = entityConverter.mapEntityToDto(appointment, AppointmentDto.class);
-                    if (appointmentDto == null) {
-                        appointmentDto = new AppointmentDto();
-                        appointmentDto.setId(appointment.getId());
-                        appointmentDto.setAppointmentDate(appointment.getAppointmentDate());
-                        appointmentDto.setAppointmentTime(appointment.getAppointmentTime());
-                        appointmentDto.setCreatedAt(appointment.getCreatedAt());
-                        appointmentDto.setReason(appointment.getReason());
-                        appointmentDto.setStatus(appointment.getStatus());
-                        appointmentDto.setAppointmentNo(appointment.getAppointmentNo());
+                .map(appt -> {
+                    // 1) 映射预约本体（兜底避免 NPE）
+                    // 1) 映射预约本体：优先使用转换器，失败则手动映射字段
+                    AppointmentDto mappedDto = appointmentConverter.mapEntityToDto(appt, AppointmentDto.class);
+                    AppointmentDto dto;
+                    if (mappedDto == null) {
+                        dto = new AppointmentDto();
+                        dto.setId(appt.getId());
+                        dto.setAppointmentDate(appt.getAppointmentDate());
+                        dto.setAppointmentTime(appt.getAppointmentTime());
+                        dto.setCreatedAt(appt.getCreatedAt());
+                        dto.setReason(appt.getReason());
+                        dto.setStatus(appt.getStatus());
+                        dto.setAppointmentNo(appt.getAppointmentNo());
+                    } else {
+                        dto = mappedDto;
                     }
 
-                    List<PetDto> petDto = Optional.ofNullable(appointment.getPets())
-                            .orElseGet(Collections::emptyList)
-                            .stream()
-                            .map(pet -> petEntityConverter.mapEntityToDto(pet, PetDto.class))
-                            .filter(Objects::nonNull)
-                            .toList();
-                    appointmentDto.setPets(petDto);
-                    return appointmentDto;
-                }).toList();
+                    // 2) 映射宠物：先转换，空或返回 null 当作 null，再滤除无效
+                    // 2) 映射宠物列表：仅当原始列表非空时执行，并滤除无效项
+                    List<Pet> originalPets = appt.getPets();
+                    List<PetDto> petDtos = List.of();
+                    if (originalPets != null) {
+                        petDtos = originalPets.stream()
+                                .map(p -> (p == null) ? null : petConverter.mapEntityToDto(p, PetDto.class))
+                                .filter(Objects::nonNull)
+                                .toList();
+                        // 3) 原始有列表但过滤后空，则添加单个默认占位
+                        if (petDtos.isEmpty()) {
+                            petDtos = List.of(new PetDto());
+                        }
+                    }
+
+                    dto.setPets(petDtos);
+                    return dto;
+                })
+                .toList();
     }
 
     @Override
@@ -205,7 +220,7 @@ public class AppointmentService implements IAppointmentService {
         LocalTime appointmentEndTime = appointment.getAppointmentTime()
                 .plusMinutes(2).truncatedTo(ChronoUnit.MINUTES);
 
-        switch (appointment.getStatus()) {
+    switch (appointment.getStatus()) {
             case APPROVED:
                 if (currentDate.isBefore(appointment.getAppointmentDate()) ||
                         (currentDate.equals(appointment.getAppointmentDate()) && currentTime.isBefore(appointment.getAppointmentTime()))) {
@@ -235,6 +250,9 @@ public class AppointmentService implements IAppointmentService {
                     // Adjusted to change status to NOT_APPROVED if current time is past the appointment time
                     appointment.setStatus(AppointmentStatus.NOT_APPROVED);
                 }
+                break;
+            default:
+                // Other statuses: no change
                 break;
         }
         appointmentRepository.save(appointment);
