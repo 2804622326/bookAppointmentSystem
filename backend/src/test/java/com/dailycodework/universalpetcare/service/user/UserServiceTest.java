@@ -223,17 +223,25 @@ class UserServiceTest {
 
     @Test
     void testAggregateUsersByEnabledStatusAndType() {
-        User user = new User();
-        user.setEnabled(true);
-        user.setUserType("PATIENT");
+        User enabledUser = new User();
+        enabledUser.setEnabled(true);
+        enabledUser.setUserType("PATIENT");
 
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        User disabledUser = new User();
+        disabledUser.setEnabled(false);
+        disabledUser.setUserType("VET");
+
+        when(userRepository.findAll()).thenReturn(List.of(enabledUser, disabledUser));
 
         Map<String, Map<String, Long>> result = userService.aggregateUsersByEnabledStatusAndType();
 
         assertTrue(result.containsKey("Enabled"));
         assertTrue(result.get("Enabled").containsKey("PATIENT"));
         assertEquals(1L, result.get("Enabled").get("PATIENT"));
+        
+        assertTrue(result.containsKey("Non-Enabled"));
+        assertTrue(result.get("Non-Enabled").containsKey("VET"));
+        assertEquals(1L, result.get("Non-Enabled").get("VET"));
     }
 
     @Test
@@ -243,5 +251,203 @@ class UserServiceTest {
 
         userService.unLockUserAccount(2L);
         verify(userRepository).updateUserEnabledStatus(2L, true);
+    }
+
+    @Test
+    void testGetUserWithDetails_withReviews_withPhotos() throws SQLException {
+        // Setup test data
+        User user = new User();
+        user.setId(1L);
+        user.setUserType("VET");
+        
+        Photo userPhoto = new Photo();
+        userPhoto.setId(1L);
+        user.setPhoto(userPhoto);
+        
+        // Setup veterinarian for review
+        User veterinarian = new User();
+        veterinarian.setId(2L);
+        veterinarian.setFirstName("Dr. John");
+        veterinarian.setLastName("Smith");
+        Photo vetPhoto = new Photo();
+        vetPhoto.setId(2L);
+        veterinarian.setPhoto(vetPhoto);
+        
+        // Setup patient for review
+        User patient = new User();
+        patient.setId(3L);
+        patient.setFirstName("Jane");
+        patient.setLastName("Doe");
+        Photo patientPhoto = new Photo();
+        patientPhoto.setId(3L);
+        patient.setPhoto(patientPhoto);
+        
+        // Setup review
+        Review review = new Review();
+        review.setId(1L);
+        review.setStars(5);
+        review.setFeedback("Great service!");
+        review.setVeterinarian(veterinarian);
+        review.setPatient(patient);
+        
+        UserDto userDto = new UserDto();
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(entityConverter.mapEntityToDto(user, UserDto.class)).thenReturn(userDto);
+        
+        // Mock review service
+        Page<Review> reviewPage = new PageImpl<>(List.of(review));
+        when(reviewService.findAllReviewsByUserId(1L, 0, Integer.MAX_VALUE)).thenReturn(reviewPage);
+        when(reviewService.getAverageRatingForVet(1L)).thenReturn(4.5);
+        
+        // Mock photo service
+        byte[] userPhotoData = "user-photo-data".getBytes();
+        byte[] vetPhotoData = "vet-photo-data".getBytes();
+        byte[] patientPhotoData = "patient-photo-data".getBytes();
+        
+        when(photoService.getImageData(1L)).thenReturn(userPhotoData);
+        when(photoService.getImageData(2L)).thenReturn(vetPhotoData);
+        when(photoService.getImageData(3L)).thenReturn(patientPhotoData);
+        
+        // Mock appointments
+        when(appointmentService.getUserAppointments(1L)).thenReturn(Collections.emptyList());
+        when(reviewRepository.countByVeterinarianId(1L)).thenReturn(5L);
+        
+        UserDto result = userService.getUserWithDetails(1L);
+        
+        // Verify the result
+        assertNotNull(result);
+        assertEquals(1, result.getReviews().size());
+        assertEquals(4.5, result.getAverageRating());
+        
+        // Verify review mapping
+        ReviewDto reviewDto = result.getReviews().get(0);
+        assertEquals(1L, reviewDto.getId());
+        assertEquals(5, reviewDto.getStars());
+        assertEquals("Great service!", reviewDto.getFeedback());
+        assertEquals(2L, reviewDto.getVeterinarianId());
+        assertEquals("Dr. John Smith", reviewDto.getVeterinarianName());
+        assertEquals(3L, reviewDto.getPatientId());
+        assertEquals("Jane Doe", reviewDto.getPatientName());
+        assertEquals(vetPhotoData, reviewDto.getVeterinarianImage());
+        assertEquals(patientPhotoData, reviewDto.getPatientImage());
+    }
+
+    @Test
+    void testGetUserWithDetails_withReviews_withoutPhotos() throws SQLException {
+        // Setup test data without photos
+        User user = new User();
+        user.setId(1L);
+        user.setUserType("VET");
+        
+        // Setup veterinarian for review without photo
+        User veterinarian = new User();
+        veterinarian.setId(2L);
+        veterinarian.setFirstName("Dr. John");
+        veterinarian.setLastName("Smith");
+        veterinarian.setPhoto(null); // No photo
+        
+        // Setup patient for review without photo
+        User patient = new User();
+        patient.setId(3L);
+        patient.setFirstName("Jane");
+        patient.setLastName("Doe");
+        patient.setPhoto(null); // No photo
+        
+        // Setup review
+        Review review = new Review();
+        review.setId(1L);
+        review.setStars(4);
+        review.setFeedback("Good service");
+        review.setVeterinarian(veterinarian);
+        review.setPatient(patient);
+        
+        UserDto userDto = new UserDto();
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(entityConverter.mapEntityToDto(user, UserDto.class)).thenReturn(userDto);
+        
+        // Mock review service
+        Page<Review> reviewPage = new PageImpl<>(List.of(review));
+        when(reviewService.findAllReviewsByUserId(1L, 0, Integer.MAX_VALUE)).thenReturn(reviewPage);
+        when(reviewService.getAverageRatingForVet(1L)).thenReturn(4.0);
+        
+        // Mock appointments
+        when(appointmentService.getUserAppointments(1L)).thenReturn(Collections.emptyList());
+        when(reviewRepository.countByVeterinarianId(1L)).thenReturn(5L);
+        
+        UserDto result = userService.getUserWithDetails(1L);
+        
+        // Verify the result
+        assertNotNull(result);
+        assertEquals(1, result.getReviews().size());
+        assertEquals(4.0, result.getAverageRating());
+        
+        // Verify review mapping without photos
+        ReviewDto reviewDto = result.getReviews().get(0);
+        assertEquals(1L, reviewDto.getId());
+        assertEquals(4, reviewDto.getStars());
+        assertEquals("Good service", reviewDto.getFeedback());
+        assertEquals(2L, reviewDto.getVeterinarianId());
+        assertEquals("Dr. John Smith", reviewDto.getVeterinarianName());
+        assertEquals(3L, reviewDto.getPatientId());
+        assertEquals("Jane Doe", reviewDto.getPatientName());
+        assertNull(reviewDto.getVeterinarianImage()); // No photo
+        assertNull(reviewDto.getPatientImage()); // No photo
+    }
+
+    @Test
+    void testGetUserWithDetails_photoServiceThrowsException() throws SQLException {
+        // Setup test data
+        User user = new User();
+        user.setId(1L);
+        user.setUserType("VET");
+        
+        // Setup veterinarian for review with photo
+        User veterinarian = new User();
+        veterinarian.setId(2L);
+        veterinarian.setFirstName("Dr. John");
+        veterinarian.setLastName("Smith");
+        Photo vetPhoto = new Photo();
+        vetPhoto.setId(2L);
+        veterinarian.setPhoto(vetPhoto);
+        
+        // Setup patient for review with photo
+        User patient = new User();
+        patient.setId(3L);
+        patient.setFirstName("Jane");
+        patient.setLastName("Doe");
+        Photo patientPhoto = new Photo();
+        patientPhoto.setId(3L);
+        patient.setPhoto(patientPhoto);
+        
+        // Setup review
+        Review review = new Review();
+        review.setId(1L);
+        review.setStars(5);
+        review.setFeedback("Great service!");
+        review.setVeterinarian(veterinarian);
+        review.setPatient(patient);
+        
+        UserDto userDto = new UserDto();
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(entityConverter.mapEntityToDto(user, UserDto.class)).thenReturn(userDto);
+        
+        // Mock review service
+        Page<Review> reviewPage = new PageImpl<>(List.of(review));
+        when(reviewService.findAllReviewsByUserId(1L, 0, Integer.MAX_VALUE)).thenReturn(reviewPage);
+        when(reviewService.getAverageRatingForVet(1L)).thenReturn(4.5);
+        
+        // Mock photo service to throw SQLException specifically for patient photo (setReviewerPhoto method)
+        when(photoService.getImageData(2L)).thenReturn("vet-photo-data".getBytes());  // Vet photo works
+        when(photoService.getImageData(3L)).thenThrow(new SQLException("Database error")); // Patient photo throws exception
+        
+        // Mock appointments
+        when(appointmentService.getUserAppointments(1L)).thenReturn(Collections.emptyList());
+        when(reviewRepository.countByVeterinarianId(1L)).thenReturn(5L);
+        
+        // This should throw RuntimeException due to SQLException
+        assertThrows(RuntimeException.class, () -> userService.getUserWithDetails(1L));
     }
 }

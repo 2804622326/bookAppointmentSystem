@@ -191,4 +191,109 @@ class AppointmentControllerTest {
         assertEquals(500, response.getStatusCodeValue());
         assertTrue(response.getBody().getMessage().contains("error"));
     }
+
+    @Test
+    void testGetAppointmentByNo_success() {
+        Appointment appointment = new Appointment();
+        when(appointmentService.getAppointmentByNo("APT-123")).thenReturn(appointment);
+
+        ResponseEntity<ApiResponse> response = controller.getAppointmentByNo("APT-123");
+
+        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(FeedBackMessage.APPOINTMENT_FOUND, response.getBody().getMessage());
+        assertEquals(appointment, response.getBody().getData());
+    }
+
+    @Test
+    void testGetAppointmentByNo_notFound() {
+        when(appointmentService.getAppointmentByNo("APT-123"))
+                .thenThrow(new ResourceNotFoundException("not found"));
+
+        ResponseEntity<ApiResponse> response = controller.getAppointmentByNo("APT-123");
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeleteAppointment_notFound() {
+        doThrow(new ResourceNotFoundException("not found"))
+                .when(appointmentService).deleteAppointment(1L);
+
+        ResponseEntity<ApiResponse> response = controller.deleteAppointmentById(1L);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeleteAppointment_internalError() {
+        doThrow(new RuntimeException("internal error"))
+                .when(appointmentService).deleteAppointment(1L);
+
+        ResponseEntity<ApiResponse> response = controller.deleteAppointmentById(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("internal error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUpdateAppointment_illegalState() {
+        AppointmentUpdateRequest request = new AppointmentUpdateRequest();
+        when(appointmentService.updateAppointment(1L, request))
+                .thenThrow(new IllegalStateException("Cannot update"));
+
+        ResponseEntity<ApiResponse> response = controller.updateAppointment(1L, request);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("Cannot update", response.getBody().getMessage());
+    }
+
+    @Test
+    void testCancelAppointment_success() {
+        Appointment appointment = new Appointment();
+        when(appointmentService.cancelAppointment(1L)).thenReturn(appointment);
+
+        ResponseEntity<ApiResponse> response = controller.cancelAppointment(1L);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(FeedBackMessage.APPOINTMENT_CANCELLED_SUCCESS, response.getBody().getMessage());
+        assertEquals(appointment, response.getBody().getData());
+    }
+
+    @Test
+    void testApproveAppointment_illegalState() {
+        when(appointmentService.approveAppointment(1L))
+                .thenThrow(new IllegalStateException("Cannot approve"));
+
+        ResponseEntity<ApiResponse> response = controller.approveAppointment(1L);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("Cannot approve", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeclineAppointment_illegalState() {
+        when(appointmentService.declineAppointment(1L))
+                .thenThrow(new IllegalStateException("Cannot decline"));
+
+        ResponseEntity<ApiResponse> response = controller.declineAppointment(1L);
+
+        assertEquals(406, response.getStatusCodeValue());
+        assertEquals("Cannot decline", response.getBody().getMessage());
+    }
+
+    @Test
+    void testBookAppointment_internalError() {
+        BookAppointmentRequest request = new BookAppointmentRequest();
+        when(appointmentService.createAppointment(request, 1L, 2L))
+                .thenThrow(new RuntimeException("Internal error"));
+
+        ResponseEntity<ApiResponse> response = controller.bookAppointment(request, 1L, 2L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Internal error", response.getBody().getMessage());
+    }
+
+
 }

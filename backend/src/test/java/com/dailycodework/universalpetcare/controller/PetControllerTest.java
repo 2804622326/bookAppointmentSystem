@@ -129,4 +129,60 @@ class PetControllerTest {
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(breeds, response.getBody().getData());
     }
+
+    @Test
+    void testGetPetById_internalError() {
+        when(petService.getPetById(1L)).thenThrow(new RuntimeException("Internal error"));
+
+        ResponseEntity<ApiResponse> response = petController.getPetById(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Internal error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeletePetById_notFound() {
+        doThrow(new ResourceNotFoundException("Pet not found"))
+                .when(petService).deletePet(1L);
+
+        ResponseEntity<ApiResponse> response = petController.deletePetById(1L);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Pet not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeletePetById_internalError() {
+        doThrow(new RuntimeException("Database error"))
+                .when(petService).deletePet(1L);
+
+        ResponseEntity<ApiResponse> response = petController.deletePetById(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Database error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUpdatePet_notFound() {
+        Pet pet = new Pet();
+        when(petService.updatePet(pet, 1L))
+                .thenThrow(new ResourceNotFoundException("Pet not found"));
+
+        ResponseEntity<ApiResponse> response = petController.updatePet(1L, pet);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Pet not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUpdatePet_internalError() {
+        Pet pet = new Pet();
+        when(petService.updatePet(pet, 1L))
+                .thenThrow(new RuntimeException("Update failed"));
+
+        ResponseEntity<ApiResponse> response = petController.updatePet(1L, pet);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Update failed", response.getBody().getMessage());
+    }
 }

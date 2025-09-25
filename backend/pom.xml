@@ -125,6 +125,16 @@
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>jacoco-maven-plugin</artifactId>
                                 <version>0.8.11</version>
+                                <configuration>
+                                        <excludes>
+                                                <!-- 排除 DTO 包 -->
+                                                <exclude>com/dailycodework/universalpetcare/dto/**</exclude>
+                                                <!-- 排除 Request 包 -->
+                                                <exclude>com/dailycodework/universalpetcare/request/**</exclude>
+                                                <!-- 排除 Response 包 -->
+                                                <exclude>com/dailycodework/universalpetcare/response/**</exclude>
+                                        </excludes>
+                                </configuration>
                                 <executions>
                                         <execution>
                                                 <goals>

@@ -182,4 +182,153 @@ class UserControllerTest {
         assertEquals(5L, userController.countVeterinarians());
         assertEquals(15L, userController.countUsers());
     }
+
+    @Test
+    void testRegister_internalServerError() {
+        RegistrationRequest request = new RegistrationRequest();
+        when(userService.register(request)).thenThrow(new RuntimeException("Database error"));
+
+        ResponseEntity<ApiResponse> response = userController.register(request);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Database error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUpdate_notFound() {
+        UserUpdateRequest request = new UserUpdateRequest();
+        when(userService.update(1L, request)).thenThrow(new ResourceNotFoundException("User not found"));
+
+        ResponseEntity<ApiResponse> response = userController.update(1L, request);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("User not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUpdate_internalServerError() {
+        UserUpdateRequest request = new UserUpdateRequest();
+        when(userService.update(1L, request)).thenThrow(new RuntimeException("Update failed"));
+
+        ResponseEntity<ApiResponse> response = userController.update(1L, request);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Update failed", response.getBody().getMessage());
+    }
+
+    @Test
+    void testFindById_internalServerError() throws SQLException {
+        when(userService.getUserWithDetails(1L)).thenThrow(new RuntimeException("Database connection error"));
+
+        ResponseEntity<ApiResponse> response = userController.findById(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Database connection error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeleteById_notFound() {
+        doThrow(new ResourceNotFoundException("User not found")).when(userService).delete(1L);
+
+        ResponseEntity<ApiResponse> response = userController.deleteById(1L);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("User not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testDeleteById_internalServerError() {
+        doThrow(new RuntimeException("Delete failed")).when(userService).delete(1L);
+
+        ResponseEntity<ApiResponse> response = userController.deleteById(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Delete failed", response.getBody().getMessage());
+    }
+
+    @Test
+    void testChangePassword_notFound() {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        doThrow(new ResourceNotFoundException("User not found"))
+                .when(changePasswordService).changePassword(1L, request);
+
+        ResponseEntity<ApiResponse> response = userController.changePassword(1L, request);
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("User not found", response.getBody().getMessage());
+    }
+
+    @Test
+    void testChangePassword_internalServerError() {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        doThrow(new RuntimeException("Password service error"))
+                .when(changePasswordService).changePassword(1L, request);
+
+        ResponseEntity<ApiResponse> response = userController.changePassword(1L, request);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Password service error", response.getBody().getMessage());
+    }
+
+    @Test
+    void testAggregateUsersByMonthAndType_internalServerError() {
+        when(userService.aggregateUsersByMonthAndType()).thenThrow(new RuntimeException("Aggregation failed"));
+
+        ResponseEntity<ApiResponse> response = userController.aggregateUsersByMonthAndType();
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Aggregation failed", response.getBody().getMessage());
+    }
+
+    @Test
+    void testGetAggregatedUsersByEnabledStatus_success() {
+        Map<String, Map<String, Long>> result = new HashMap<>();
+        result.put("enabled", Map.of("PATIENT", 5L, "VET", 3L));
+        when(userService.aggregateUsersByEnabledStatusAndType()).thenReturn(result);
+
+        ResponseEntity<ApiResponse> response = userController.getAggregatedUsersByEnabledStatus();
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(result, response.getBody().getData());
+        assertEquals(FeedBackMessage.RESOURCE_FOUND, response.getBody().getMessage());
+    }
+
+    @Test
+    void testGetAggregatedUsersByEnabledStatus_internalServerError() {
+        when(userService.aggregateUsersByEnabledStatusAndType()).thenThrow(new RuntimeException("Status aggregation failed"));
+
+        ResponseEntity<ApiResponse> response = userController.getAggregatedUsersByEnabledStatus();
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Status aggregation failed", response.getBody().getMessage());
+    }
+
+    @Test
+    void testLockUserAccount_internalServerError() {
+        doThrow(new RuntimeException("Lock failed")).when(userService).lockUserAccount(1L);
+
+        ResponseEntity<ApiResponse> response = userController.lockUserAccount(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Lock failed", response.getBody().getMessage());
+    }
+
+    @Test
+    void testUnLockUserAccount_success() {
+        ResponseEntity<ApiResponse> response = userController.unLockUserAccount(1L);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(FeedBackMessage.UNLOCKED_ACCOUNT_SUCCESS, response.getBody().getMessage());
+        verify(userService).unLockUserAccount(1L);
+    }
+
+    @Test
+    void testUnLockUserAccount_internalServerError() {
+        doThrow(new RuntimeException("Unlock failed")).when(userService).unLockUserAccount(1L);
+
+        ResponseEntity<ApiResponse> response = userController.unLockUserAccount(1L);
+
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals("Unlock failed", response.getBody().getMessage());
+    }
 }
