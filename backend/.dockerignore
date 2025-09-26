@@ -1,4 +1,3 @@
-target/
 .mvn/
 *.iml
 .idea/
@@ -8,3 +7,6 @@ target/
 *.log
 .DS_Store
 node_modules/
+src/test/
+# Keep target/*.jar for single-stage build
+!target/*.jar
