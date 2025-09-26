@@ -56,7 +56,7 @@ class UserRepositoryTest {
     void testUpdateUser() {
         when(userRepository.updateUser(
                 1L, "John", "Doe", "Male", "1234567890"
-        )).thenReturn(1); // 模拟成功更新 1 条记录
+        )).thenReturn(1); // Mock successful update of 1 record
 
         int result = repositoryCaller.updateUserData();
 
@@ -88,7 +88,7 @@ class UserRepositoryTest {
 
     @Test
     void testUpdateUserEnabledStatus() {
-        // 模拟 void 方法，不用 when
+        // Mock void method, no need for when()
         repositoryCaller.disableUser(1L);
         verify(userRepository).updateUserEnabledStatus(1L, false);
     }

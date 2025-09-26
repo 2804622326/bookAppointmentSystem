@@ -54,7 +54,7 @@ class JwtUtilsTest {
                 2L,
                 "valid@example.com",
                 "secret",
-                true, // isEnabled 设置为 true 以模拟已启用账户
+                true, // isEnabled set to true to simulate an enabled account
                 List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         String token = jwtUtils.generateTokenForUser(authentication);

@@ -29,7 +29,7 @@ class RoleRepositoryTest {
         Role mockRole = new Role();
         mockRole.setName(roleName);
 
-        // 模拟行为
+        // Mock behavior
         when(roleRepository.findByName(roleName)).thenReturn(Optional.of(mockRole));
 
         Optional<Role> result = dummyRoleCaller.findRoleByName(roleName);
@@ -53,7 +53,7 @@ class RoleRepositoryTest {
         verify(roleRepository).findByName(roleName);
     }
 
-    // ========= 帮助类，用于调用 RoleRepository =========
+    // ========= Helper class for calling RoleRepository =========
     static class DummyRoleCaller {
         @InjectMocks
         private RoleRepository roleRepository;
