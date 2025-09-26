@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: pet-care-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Liminghao2001
+      MYSQL_DATABASE: pet-care-system
+      MYSQL_USER: petcare
+      MYSQL_PASSWORD: Liminghao2001
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - pet-care-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pet-care-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pet-care-system
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Liminghao2001
+      FRONTEND_BASE_URL: http://frontend:80
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "9192:9192"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pet-care-network
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pet-care-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - pet-care-network
+    environment:
+      REACT_APP_API_BASE_URL: http://localhost:9192/api/v1
+
+volumes:
+  mysql_data:
+
+networks:
+  pet-care-network:
+    driver: bridge
