@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: pet-care-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Liminghao2001
+      MYSQL_DATABASE: pet-care-system
+      MYSQL_USER: petcare_user
+      MYSQL_PASSWORD: Liminghao2001
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - pet-care-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Boot Backend
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pet-care-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "9192:9192"
+    environment:
+      # Database configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pet-care-system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Liminghao2001
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      
+      # JPA/Hibernate configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      
+      # Application configuration
+      SERVER_PORT: 9192
+      
+      # JWT configuration
+      AUTH_TOKEN_EXPIRATION_IN_MILS: 3600000
+      AUTH_TOKEN_JWT_SECRET: 36763979244226452948404D635166546A576D5A7134743777217A25432A462D
+      
+      # Frontend URL
+      FRONTEND_BASE_URL: http://localhost:3000
+      
+      # Logging
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER: TRACE
+    networks:
+      - pet-care-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9192/api/v1/pets/get-types"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pet-care-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:9192/api/v1
+    networks:
+      - pet-care-network
+
+# Networks
+networks:
+  pet-care-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local

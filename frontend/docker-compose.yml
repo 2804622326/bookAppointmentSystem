@@ -1,3 +1,6 @@
+# This file is deprecated. Please use the main docker-compose.yml in the root directory.
+# Use: docker-compose -f ../docker-compose.yml up
+
 version: '3'
 services:
   web:
