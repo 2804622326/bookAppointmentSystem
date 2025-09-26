@@ -1,5 +1,10 @@
-import { api } from '../../../components/utils/api.js';
+import {
+  api,
+  API_BASE_URL,
+  FALLBACK_API_BASE_URL,
+} from '../../../components/utils/api.js';
 
 test('api instance has correct baseURL', () => {
-  expect(api.defaults.baseURL).toBe('http://localhost:9192/api/v1');
+  expect(API_BASE_URL).toBe(FALLBACK_API_BASE_URL);
+  expect(api.defaults.baseURL).toBe(FALLBACK_API_BASE_URL);
 });
