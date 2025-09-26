@@ -19,7 +19,7 @@ docker-compose up --build
 ### 2. Access the Application
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:9192/api/v1
-- **MySQL**: localhost:3306
+- **MySQL**: localhost:3307
 
 ### 3. Stop All Services
 ```bash
@@ -37,7 +37,7 @@ docker-compose down -v
 |----------|------|-------------|
 | Frontend | 3000 | React.js application served by Nginx |
 | Backend  | 9192 | Spring Boot REST API |
-| MySQL    | 3306 | Database server |
+| MySQL    | 3307 | Database server |
 
 ## 🔧 Configuration
 
@@ -65,7 +65,7 @@ docker-compose down -v
 1. **Port Already in Use**
    ```bash
    # Check what's using the port
-   lsof -i :3000  # or :9192, :3306
+   lsof -i :3000  # or :9192, :3307
    
    # Kill the process or change ports in docker-compose.yml
    ```

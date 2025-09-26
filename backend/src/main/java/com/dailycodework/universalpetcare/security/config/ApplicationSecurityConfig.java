@@ -76,7 +76,11 @@ public class ApplicationSecurityConfig {
             @Override
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/**") // Apply to all endpoints
-                        .allowedOrigins("http://localhost:5174") // Allow this origin
+                        .allowedOrigins(
+                            "http://localhost:3000",    // Frontend container port
+                            "http://localhost:5174",    // Vite dev server port
+                            "http://frontend:80"        // Container-to-container communication
+                        )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow these HTTP methods
                         .allowedHeaders("*") // Allow all headers
                         .allowCredentials(true); // Allow credentials
