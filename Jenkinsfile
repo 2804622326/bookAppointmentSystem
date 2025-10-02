@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'ecs-agent'
-    }
+    agent any
     
     environment {
         // AWS Configuration
