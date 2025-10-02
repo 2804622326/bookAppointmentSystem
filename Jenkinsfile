@@ -127,8 +127,9 @@ pipeline {
                     steps {
                         echo '🔒 Scanning backend image for security vulnerabilities...'
                         script {
+                            def REGISTRY = "614441038924.dkr.ecr.eu-west-1.amazonaws.com"
                             try {
-                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${REGISTRY}/pet-care-backend:${IMAGE_TAG}"
                             } catch (Exception e) {
                                 echo "⚠️  Security vulnerabilities found in backend image, but continuing build..."
                             }
@@ -139,8 +140,9 @@ pipeline {
                     steps {
                         echo '🔒 Scanning frontend image for security vulnerabilities...'
                         script {
+                            def REGISTRY = "614441038924.dkr.ecr.eu-west-1.amazonaws.com"
                             try {
-                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${REGISTRY}/pet-care-frontend:${IMAGE_TAG}"
                             } catch (Exception e) {
                                 echo "⚠️  Security vulnerabilities found in frontend image, but continuing build..."
                             }
@@ -155,19 +157,20 @@ pipeline {
                 echo '📤 Pushing images to ECR...'
                 withCredentials([aws(credentialsId: "${AWS_CREDENTIAL_ID}", region: "${AWS_REGION}")]) {
                     script {
+                        def REGISTRY = "614441038924.dkr.ecr.eu-west-1.amazonaws.com"
                         // Login to ECR
-                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY}"
                         
                         // Push images
-                        sh "docker push ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
-                        sh "docker push ${ECR_REGISTRY}/${BACKEND_REPO}:latest"
+                        sh "docker push ${REGISTRY}/pet-care-backend:${IMAGE_TAG}"
+                        sh "docker push ${REGISTRY}/pet-care-backend:latest"
                         
-                        sh "docker push ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
-                        sh "docker push ${ECR_REGISTRY}/${FRONTEND_REPO}:latest"
+                        sh "docker push ${REGISTRY}/pet-care-frontend:${IMAGE_TAG}"
+                        sh "docker push ${REGISTRY}/pet-care-frontend:latest"
                         
                         echo "✅ Image push completed"
-                        echo "Backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
-                        echo "Frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                        echo "Backend image: ${REGISTRY}/pet-care-backend:${IMAGE_TAG}"
+                        echo "Frontend image: ${REGISTRY}/pet-care-frontend:${IMAGE_TAG}"
                     }
                 }
             }
