@@ -1,6 +1,9 @@
 # Use OpenJDK 17 as base image
 FROM openjdk:17-jdk-slim
 
+# Install wget for health checks
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 
@@ -23,7 +26,7 @@ COPY src src
 RUN ./mvnw clean package -DskipTests
 
 # Expose the port that the app runs on
-EXPOSE 9192
+EXPOSE 9193
 
 # Run the jar file
 ENTRYPOINT ["java", "-jar", "target/universal-pet-care-0.0.1-SNAPSHOT.jar"]
