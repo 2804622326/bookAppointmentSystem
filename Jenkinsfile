@@ -35,7 +35,7 @@ pipeline {
             steps {
                 echo '📥 Checking out source code...'
                 checkout scm
-                sh 'git checkout codex/improve-instruction-coverage || git checkout main'
+                sh 'git checkout jenkins-ecs-integration-v1 || echo "Using current branch"'
             }
         }
         
@@ -51,7 +51,7 @@ pipeline {
                 }
                 
                 // Publish test reports
-                publishTestResults testResultsPattern: 'backend/target/surefire-reports/*.xml'
+                junit 'backend/target/surefire-reports/*.xml'
                 
                 // Archive build artifacts
                 archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
@@ -278,9 +278,6 @@ pipeline {
                 docker image prune -f
                 docker container prune -f
             '''
-            
-            // Clean workspace
-            cleanWs()
         }
         
         success {
@@ -328,7 +325,7 @@ pipeline {
                 • Build Number: ${BUILD_NUMBER}
                 • Failed Stage: ${env.STAGE_NAME}
                 
-                🔍 View Details: ${BUILD_URL}
+                🔍 View Details: ${env.BUILD_URL}
                 """
                 
                 echo message
