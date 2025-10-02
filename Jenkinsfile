@@ -28,10 +28,7 @@ pipeline {
         AWS_CREDENTIAL_ID = 'aws-credentials'
     }
     
-    tools {
-        maven 'Maven-3.9.0' // Ensure Maven is configured in Jenkins
-        nodejs 'NodeJS-18'  // Ensure NodeJS is configured in Jenkins
-    }
+    // Removed tools block: use local Maven Wrapper and Docker container NodeJS
     
     stages {
         stage('Checkout') {
