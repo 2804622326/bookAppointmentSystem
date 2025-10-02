@@ -92,7 +92,8 @@ pipeline {
                                 "${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}",
                                 "./backend"
                             )
-                            backendImage.tag("${ECR_REGISTRY}/${BACKEND_REPO}:latest")
+                            // Tag the image with 'latest' tag
+                            sh "docker tag ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${BACKEND_REPO}:latest"
                         }
                     }
                 }
@@ -104,7 +105,8 @@ pipeline {
                                 "${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}",
                                 "./frontend"
                             )
-                            frontendImage.tag("${ECR_REGISTRY}/${FRONTEND_REPO}:latest")
+                            // Tag the image with 'latest' tag
+                            sh "docker tag ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${FRONTEND_REPO}:latest"
                         }
                     }
                 }
