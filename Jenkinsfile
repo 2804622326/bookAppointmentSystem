@@ -14,7 +14,7 @@ pipeline {
         // ECS Configuration
         ECS_CLUSTER = 'pet-care-cluster'
         BACKEND_SERVICE = 'pet-care-backend-service'
-        FRONTEND_SERVICE = 'pet-care-frontend-service'
+        FRONTEND_SERVICE = 'pet-care-frontend-service-jqsbfks7'
         
         // ALB Configuration
         ALB_DNS_NAME = 'ALB-pet-384183543.eu-west-1.elb.amazonaws.com'
