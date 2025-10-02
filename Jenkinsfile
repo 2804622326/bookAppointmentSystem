@@ -23,7 +23,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // AWS Credentials ID (configured in Jenkins)
-        AWS_CREDENTIAL_ID = 'aws-credentials'
+        AWS_CREDENTIAL_ID = 'new-AWS-ECS'
     }
     
     // Removed tools block: use local Maven Wrapper and Docker container NodeJS
@@ -147,7 +147,8 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 echo '📤 Pushing images to ECR...'
-                withCredentials([aws(credentialsId: "${AWS_CREDENTIAL_ID}", region: "${AWS_REGION}")]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'new-AWS-ECS']]) {
                     script {
                         // Login to ECR
                         sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
@@ -170,7 +171,8 @@ pipeline {
         stage('Deploy to ECS') {
             steps {
                 echo '🚀 Deploying to ECS...'
-                withCredentials([aws(credentialsId: "${AWS_CREDENTIAL_ID}", region: "${AWS_REGION}")]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'new-AWS-ECS']]) {
                     script {
                         // Update backend service
                         echo "Updating backend service: ${BACKEND_SERVICE}"
@@ -199,7 +201,8 @@ pipeline {
         stage('Wait for Deployment') {
             steps {
                 echo '⏳ Waiting for deployment completion...'
-                withCredentials([aws(credentialsId: "${AWS_CREDENTIAL_ID}", region: "${AWS_REGION}")]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'new-AWS-ECS']]) {
                     script {
                         // Wait for services to stabilize
                         sh """
