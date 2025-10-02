@@ -83,33 +83,46 @@ pipeline {
         }
         
         stage('Build Docker Images') {
-            parallel {
-                stage('Build Backend Image') {
-                    steps {
-                        echo '🐳 Building backend Docker image...'
-                        script {
-                            def backendImageName = "${ECR_REGISTRY}/${BACKEND_REPO}"
-                            
-                            // Build backend image using direct docker command
-                            sh "docker build -t ${backendImageName}:${IMAGE_TAG} ./backend"
-                            
-                            // Tag the image with 'latest' tag
-                            sh "docker tag ${backendImageName}:${IMAGE_TAG} ${backendImageName}:latest"
-                        }
-                    }
-                }
-                stage('Build Frontend Image') {
-                    steps {
-                        echo '🎯 Building frontend Docker image...'
-                        script {
-                            def frontendImageName = "${ECR_REGISTRY}/${FRONTEND_REPO}"
-                            
-                            // Build frontend image using direct docker command
-                            sh "docker build -t ${frontendImageName}:${IMAGE_TAG} ./frontend"
-                            
-                            // Tag the image with 'latest' tag
-                            sh "docker tag ${frontendImageName}:${IMAGE_TAG} ${frontendImageName}:latest"
-                        }
+            steps {
+                echo '🐳 Building Docker images for amd64 architecture...'
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'new-AWS-ECS']]) {
+                    script {
+                        // Setup buildx for cross-platform builds
+                        sh '''
+                            # Create and use buildx builder (if not exists)
+                            docker buildx create --use --name cross --driver-opt network=host || docker buildx use cross
+                            docker buildx inspect --bootstrap
+                        '''
+                        
+                        // Login to ECR
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                        
+                        // Build and push backend image with amd64 architecture
+                        echo "Building and pushing backend image..."
+                        sh """
+                            docker buildx build \\
+                              --platform linux/amd64 \\
+                              -t ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} \\
+                              -t ${ECR_REGISTRY}/${BACKEND_REPO}:latest \\
+                              ./backend \\
+                              --push
+                        """
+                        
+                        // Build and push frontend image with amd64 architecture
+                        echo "Building and pushing frontend image..."
+                        sh """
+                            docker buildx build \\
+                              --platform linux/amd64 \\
+                              -t ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} \\
+                              -t ${ECR_REGISTRY}/${FRONTEND_REPO}:latest \\
+                              ./frontend \\
+                              --push
+                        """
+                        
+                        echo "✅ Images built and pushed successfully for amd64 architecture"
+                        echo "Backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                        echo "Frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
                     }
                 }
             }
@@ -139,30 +152,6 @@ pipeline {
                                 echo "⚠️  Security vulnerabilities found in frontend image, but continuing build..."
                             }
                         }
-                    }
-                }
-            }
-        }
-        
-        stage('Push to ECR') {
-            steps {
-                echo '📤 Pushing images to ECR...'
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                  credentialsId: 'new-AWS-ECS']]) {
-                    script {
-                        // Login to ECR
-                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                        
-                        // Push images
-                        sh "docker push ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
-                        sh "docker push ${ECR_REGISTRY}/${BACKEND_REPO}:latest"
-                        
-                        sh "docker push ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
-                        sh "docker push ${ECR_REGISTRY}/${FRONTEND_REPO}:latest"
-                        
-                        echo "✅ Image push completed"
-                        echo "Backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
-                        echo "Frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
                     }
                 }
             }
