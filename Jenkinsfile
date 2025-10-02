@@ -88,14 +88,15 @@ pipeline {
                     steps {
                         echo '🐳 Building backend Docker image...'
                         script {
+                            def REGISTRY = "614441038924.dkr.ecr.eu-west-1.amazonaws.com"
                             def backendImage = docker.build(
-                                "${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}",
+                                "${REGISTRY}/pet-care-backend:${IMAGE_TAG}",
                                 "./backend"
                             )
                             // Tag the image with 'latest' tag
                             sh """
-                                docker tag ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} \\
-                                           ${ECR_REGISTRY}/${BACKEND_REPO}:latest
+                                docker tag ${REGISTRY}/pet-care-backend:${IMAGE_TAG} \\
+                                           ${REGISTRY}/pet-care-backend:latest
                             """
                         }
                     }
@@ -104,14 +105,15 @@ pipeline {
                     steps {
                         echo '🎯 Building frontend Docker image...'
                         script {
+                            def REGISTRY = "614441038924.dkr.ecr.eu-west-1.amazonaws.com"
                             def frontendImage = docker.build(
-                                "${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}",
+                                "${REGISTRY}/pet-care-frontend:${IMAGE_TAG}",
                                 "./frontend"
                             )
                             // Tag the image with 'latest' tag
                             sh """
-                                docker tag ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} \\
-                                           ${ECR_REGISTRY}/${FRONTEND_REPO}:latest
+                                docker tag ${REGISTRY}/pet-care-frontend:${IMAGE_TAG} \\
+                                           ${REGISTRY}/pet-care-frontend:latest
                             """
                         }
                     }
