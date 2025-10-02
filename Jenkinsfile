@@ -5,7 +5,7 @@ pipeline {
     
     environment {
         // AWS Configuration
-        AWS_REGION = 'us-east-1'
+        AWS_REGION = 'eu-west-1'
         AWS_ACCOUNT_ID = '614441038924'
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         
@@ -19,7 +19,7 @@ pipeline {
         FRONTEND_SERVICE = 'pet-care-frontend-service'
         
         // ALB Configuration
-        ALB_DNS_NAME = 'pet-care-alb-324602613.eu-west-1.elb.amazonaws.com'
+        ALB_DNS_NAME = 'ALB-pet-384183543.eu-west-1.elb.amazonaws.com'
         
         // Image Tag
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -300,8 +300,8 @@ pipeline {
                 • Image Tag: ${IMAGE_TAG}
                 
                 🔗 Links:
-                • Frontend: http://pet-care-alb-324602613.eu-west-1.elb.amazonaws.com
-                • API: http://pet-care-alb-324602613.eu-west-1.elb.amazonaws.com/api/v1
+                • Frontend: http://ALB-pet-384183543.eu-west-1.elb.amazonaws.com
+                • API: http://ALB-pet-384183543.eu-west-1.elb.amazonaws.com/api/v1
                 
                 📊 Deployment Details:
                 • ECS Cluster: ${ECS_CLUSTER}
