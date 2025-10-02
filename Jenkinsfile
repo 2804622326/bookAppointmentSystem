@@ -88,11 +88,13 @@ pipeline {
                     steps {
                         echo '🐳 Building backend Docker image...'
                         script {
+                            def backendImageName = "${ECR_REGISTRY}/${BACKEND_REPO}"
+                            
                             // Build backend image using direct docker command
-                            sh "docker build -t ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} ./backend"
+                            sh "docker build -t ${backendImageName}:${IMAGE_TAG} ./backend"
                             
                             // Tag the image with 'latest' tag
-                            sh "docker tag ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${BACKEND_REPO}:latest"
+                            sh "docker tag ${backendImageName}:${IMAGE_TAG} ${backendImageName}:latest"
                         }
                     }
                 }
@@ -100,11 +102,13 @@ pipeline {
                     steps {
                         echo '🎯 Building frontend Docker image...'
                         script {
+                            def frontendImageName = "${ECR_REGISTRY}/${FRONTEND_REPO}"
+                            
                             // Build frontend image using direct docker command
-                            sh "docker build -t ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} ./frontend"
+                            sh "docker build -t ${frontendImageName}:${IMAGE_TAG} ./frontend"
                             
                             // Tag the image with 'latest' tag
-                            sh "docker tag ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${FRONTEND_REPO}:latest"
+                            sh "docker tag ${frontendImageName}:${IMAGE_TAG} ${frontendImageName}:latest"
                         }
                     }
                 }
