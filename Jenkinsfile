@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'ecs-agent'
-    }
+    agent any
     
     environment {
         // AWS Configuration
@@ -35,7 +33,7 @@ pipeline {
             steps {
                 echo '📥 Checking out source code...'
                 checkout scm
-                sh 'git checkout jenkins-ecs-integration-v1 || echo "Using current branch"'
+                echo "Using current branch: ${env.BRANCH_NAME}"
             }
         }
         
@@ -278,6 +276,17 @@ pipeline {
                 docker image prune -f
                 docker container prune -f
             '''
+            
+            // Clean workspace (requires Workspace Cleanup plugin)
+            script {
+                try {
+                    cleanWs()
+                } catch (Exception e) {
+                    echo "⚠️ Workspace cleanup failed (plugin not installed): ${e.message}"
+                    // Alternative cleanup
+                    sh 'rm -rf ./*'
+                }
+            }
         }
         
         success {
