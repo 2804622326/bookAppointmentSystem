@@ -88,15 +88,11 @@ pipeline {
                     steps {
                         echo '🐳 Building backend Docker image...'
                         script {
-                            def backendImage = docker.build(
-                                "${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}",
-                                "./backend"
-                            )
+                            // Build backend image using direct docker command
+                            sh "docker build -t ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} ./backend"
+                            
                             // Tag the image with 'latest' tag
-                            sh """
-                                docker tag ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} \\
-                                           ${ECR_REGISTRY}/${BACKEND_REPO}:latest
-                            """
+                            sh "docker tag ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${BACKEND_REPO}:latest"
                         }
                     }
                 }
@@ -104,15 +100,11 @@ pipeline {
                     steps {
                         echo '🎯 Building frontend Docker image...'
                         script {
-                            def frontendImage = docker.build(
-                                "${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}",
-                                "./frontend"
-                            )
+                            // Build frontend image using direct docker command
+                            sh "docker build -t ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} ./frontend"
+                            
                             // Tag the image with 'latest' tag
-                            sh """
-                                docker tag ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} \\
-                                           ${ECR_REGISTRY}/${FRONTEND_REPO}:latest
-                            """
+                            sh "docker tag ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${FRONTEND_REPO}:latest"
                         }
                     }
                 }
