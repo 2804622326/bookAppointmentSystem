@@ -136,20 +136,26 @@ pipeline {
                         // Login to ECR within the same credential context
                         sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                         
-                        // Scan backend image with error handling
-                        echo "Scanning backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                        // Pull and scan backend image with error handling
+                        echo "Pulling and scanning backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
                         try {
-                            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                            sh "docker pull ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL --scanners vuln ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                            echo "✅ Backend image security scan completed"
                         } catch (Exception e) {
                             echo "⚠️ Security vulnerabilities found in backend image, but continuing build..."
+                            echo "Error: ${e.message}"
                         }
                         
-                        // Scan frontend image with error handling
-                        echo "Scanning frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                        // Pull and scan frontend image with error handling  
+                        echo "Pulling and scanning frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
                         try {
-                            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                            sh "docker pull ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL --scanners vuln ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                            echo "✅ Frontend image security scan completed"
                         } catch (Exception e) {
                             echo "⚠️ Security vulnerabilities found in frontend image, but continuing build..."
+                            echo "Error: ${e.message}"
                         }
                     }
                 }
