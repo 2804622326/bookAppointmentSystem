@@ -194,25 +194,17 @@ pipeline {
         
         stage('Wait for Deployment') {
             steps {
-                echo '⏳ Waiting for deployment completion...'
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                  credentialsId: 'new-AWS-ECS']]) {
-                    script {
-                        // Wait for services to stabilize
-                        sh """
-                            echo "Waiting for backend service to stabilize..."
-                            aws ecs wait services-stable \
-                                --cluster ${ECS_CLUSTER} \
-                                --services ${BACKEND_SERVICE} \
-                                --region ${AWS_REGION}
-                            
-                            echo "Waiting for frontend service to stabilize..."
-                            aws ecs wait services-stable \
-                                --cluster ${ECS_CLUSTER} \
-                                --services ${FRONTEND_SERVICE} \
-                                --region ${AWS_REGION}
-                        """
-                    }
+                echo '⏳ Giving services time to deploy...'
+                script {
+                    // Simple wait approach since ecr-user lacks ECS describe permissions
+                    echo "🚀 Services have been updated with force-new-deployment"
+                    echo "⏱️  Allowing 3 minutes for service deployment to complete..."
+                    echo "� Note: Deployment verification will be done via health checks in next stage"
+                    
+                    // Wait 3 minutes for deployment to have time to complete
+                    sleep time: 3, unit: 'MINUTES'
+                    
+                    echo "✅ Deployment wait period completed - proceeding to health check"
                 }
             }
         }
