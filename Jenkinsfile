@@ -88,41 +88,75 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
                                   credentialsId: 'new-AWS-ECS']]) {
                     script {
+                        // Login to ECR first
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                        
+                        // Clean any existing images to avoid conflicts
+                        echo "Cleaning existing Docker images..."
+                        sh '''
+                            docker system prune -f
+                            docker builder prune -f
+                        '''
                         // Setup buildx for cross-platform builds
                         sh '''
                             # Create and use buildx builder (if not exists)
                             docker buildx create --use --name cross --driver-opt network=host || docker buildx use cross
                             docker buildx inspect --bootstrap
+                            
+                            # Verify buildx supports amd64 platform
+                            docker buildx ls
                         '''
                         
-                        // Login to ECR
-                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+
                         
-                        // Build and push backend image with multi-architecture support (amd64 + arm64)
+                        // Build and push backend image for amd64 architecture only
                         echo "Building and pushing backend image..."
                         sh """
                             docker buildx build \\
-                              --platform linux/amd64,linux/arm64 \\
+                              --platform linux/amd64 \\
+                              --provenance=false \\
+                              --sbom=false \\
                               -t ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} \\
                               -t ${ECR_REGISTRY}/${BACKEND_REPO}:latest \\
                               ./backend \\
                               --push
                         """
                         
-                        // Build and push frontend image with multi-architecture support (amd64 + arm64)
+                        // Verify backend image manifest
+                        echo "Verifying backend image manifest..."
+                        sh """
+                            docker buildx imagetools inspect ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}
+                        """
+                        
+                        // Build and push frontend image for amd64 architecture only
                         echo "Building and pushing frontend image..."
                         sh """
                             docker buildx build \\
-                              --platform linux/amd64,linux/arm64 \\
+                              --platform linux/amd64 \\
+                              --provenance=false \\
+                              --sbom=false \\
                               -t ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} \\
                               -t ${ECR_REGISTRY}/${FRONTEND_REPO}:latest \\
                               ./frontend \\
                               --push
                         """
                         
+                        // Verify frontend image manifest
+                        echo "Verifying frontend image manifest..."
+                        sh """
+                            docker buildx imagetools inspect ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}
+                        """
+                        
                         echo "✅ Images built and pushed successfully for amd64 architecture"
                         echo "Backend image: ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
                         echo "Frontend image: ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
+                        
+                        // Final verification that images are available in ECR
+                        echo "Final verification: Checking images in ECR..."
+                        sh """
+                            aws ecr describe-images --repository-name ${BACKEND_REPO} --image-ids imageTag=${IMAGE_TAG} --region ${AWS_REGION}
+                            aws ecr describe-images --repository-name ${FRONTEND_REPO} --image-ids imageTag=${IMAGE_TAG} --region ${AWS_REGION}
+                        """
                     }
                 }
             }
