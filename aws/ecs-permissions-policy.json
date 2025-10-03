@@ -1,0 +1,39 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ECSServiceManagement",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:UpdateService",
+                "ecs:DescribeServices",
+                "ecs:ListTasks",
+                "ecs:DescribeTasks"
+            ],
+            "Resource": [
+                "arn:aws:ecs:eu-west-1:614441038924:service/pet-care-cluster/pet-care-backend-service",
+                "arn:aws:ecs:eu-west-1:614441038924:service/pet-care-cluster/pet-care-frontend-service-jqsbfks7",
+                "arn:aws:ecs:eu-west-1:614441038924:task/pet-care-cluster/*"
+            ]
+        },
+        {
+            "Sid": "ECSClusterAccess",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:DescribeClusters"
+            ],
+            "Resource": [
+                "arn:aws:ecs:eu-west-1:614441038924:cluster/pet-care-cluster"
+            ]
+        },
+        {
+            "Sid": "LoadBalancerHealthCheck",
+            "Effect": "Allow",
+            "Action": [
+                "elbv2:DescribeTargetHealth",
+                "elbv2:DescribeTargetGroups"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
