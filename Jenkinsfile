@@ -98,22 +98,22 @@ pipeline {
                         // Login to ECR
                         sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                         
-                        // Build and push backend image with amd64 architecture
+                        // Build and push backend image with multi-architecture support (amd64 + arm64)
                         echo "Building and pushing backend image..."
                         sh """
                             docker buildx build \\
-                              --platform linux/amd64 \\
+                              --platform linux/amd64,linux/arm64 \\
                               -t ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG} \\
                               -t ${ECR_REGISTRY}/${BACKEND_REPO}:latest \\
                               ./backend \\
                               --push
                         """
                         
-                        // Build and push frontend image with amd64 architecture
+                        // Build and push frontend image with multi-architecture support (amd64 + arm64)
                         echo "Building and pushing frontend image..."
                         sh """
                             docker buildx build \\
-                              --platform linux/amd64 \\
+                              --platform linux/amd64,linux/arm64 \\
                               -t ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG} \\
                               -t ${ECR_REGISTRY}/${FRONTEND_REPO}:latest \\
                               ./frontend \\
@@ -129,31 +129,15 @@ pipeline {
         }
         
         stage('Security Scan') {
-            parallel {
-                stage('Backend Security Scan') {
-                    steps {
-                        echo '🔒 Scanning backend image for security vulnerabilities...'
-                        script {
-                            try {
-                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
-                            } catch (Exception e) {
-                                echo "⚠️  Security vulnerabilities found in backend image, but continuing build..."
-                            }
-                        }
-                    }
+            steps {
+                echo '🔒 Logging in to ECR for Trivy scan...'
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'new-AWS-ECS']]) {
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 }
-                stage('Frontend Security Scan') {
-                    steps {
-                        echo '🔒 Scanning frontend image for security vulnerabilities...'
-                        script {
-                            try {
-                                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
-                            } catch (Exception e) {
-                                echo "⚠️  Security vulnerabilities found in frontend image, but continuing build..."
-                            }
-                        }
-                    }
-                }
+                echo '🔒 Scanning backend image for security vulnerabilities...'
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${BACKEND_REPO}:${IMAGE_TAG}"
+                echo '🔒 Scanning frontend image for security vulnerabilities...'
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL ${ECR_REGISTRY}/${FRONTEND_REPO}:${IMAGE_TAG}"
             }
         }
         
