@@ -5,6 +5,18 @@
 
 set -e
 
+# 检查AWS凭证
+if ! aws sts get-caller-identity >/dev/null 2>&1; then
+    echo "❌ 错误: AWS凭证未配置"
+    echo "请先运行以下命令配置AWS凭证:"
+    echo "aws configure"
+    echo "或者设置环境变量:"
+    echo "export AWS_ACCESS_KEY_ID=your_access_key"
+    echo "export AWS_SECRET_ACCESS_KEY=your_secret_key"
+    echo "export AWS_DEFAULT_REGION=eu-west-1"
+    exit 1
+fi
+
 # 配置变量
 AWS_REGION="eu-west-1"
 AWS_ACCOUNT_ID="614441038924"
