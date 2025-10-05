@@ -6,14 +6,10 @@ export async function bookAppointment(
   appointmentRequest
 ) {
   try {
-    const token = localStorage.getItem("authToken")
+    // Auth token will be automatically added by axios interceptor
     const result = await api.post(
       `/appointments/book-appointment?senderId=${senderId}&recipientId=${recipientId}`,
-      appointmentRequest, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      appointmentRequest
     );
     console.log("The result from here :", result);
     return result.data;
