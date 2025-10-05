@@ -9,12 +9,29 @@ export const api = axios.create({
   baseURL,
 });
 
-// Add request interceptor to automatically include auth token
+// Add request interceptor to automatically include auth token for protected endpoints
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // List of public endpoints that don't need authentication
+    const publicEndpoints = [
+      '/veterinarians/get-all-veterinarians',
+      '/auth/login',
+      '/auth/register',
+      '/users/verify-email',
+      '/users/request-password-reset',
+      '/users/reset-password'
+    ];
+    
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      config.url && config.url.includes(endpoint)
+    );
+    
+    // Only add auth token for non-public endpoints
+    if (!isPublicEndpoint) {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
