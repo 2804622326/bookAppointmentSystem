@@ -60,11 +60,15 @@ pipeline {
             steps {
                 echo '🎨 Building and testing frontend...'
                 dir('frontend') {
-                    // Install dependencies
-                    sh 'npm ci'
+                    // Clean install dependencies with npm cache verification
+                    sh '''
+                        npm cache clean --force
+                        npm ci
+                        npx jest --version || echo "Jest not found, installing..."
+                    '''
                     
-                    // Run tests
-                    sh 'npm run test -- --coverage --watchAll=false'
+                    // Run tests with explicit Jest path
+                    sh 'npx jest --coverage --watchAll=false'
                     
                     // Build production version
                     sh 'npm run build'
