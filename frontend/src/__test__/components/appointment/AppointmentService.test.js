@@ -23,14 +23,14 @@ describe('AppointmentService', () => {
     jest.clearAllMocks();
   });
 
-  test('bookAppointment posts data with auth header', async () => {
+  test('bookAppointment posts data with correct URL and payload', async () => {
     localStorage.setItem('authToken', 'token123');
     await bookAppointment('1', '2', { a: 1 });
     expect(api.post).toHaveBeenCalledWith(
       '/appointments/book-appointment?senderId=1&recipientId=2',
-      { a: 1 },
-      { headers: { Authorization: 'Bearer token123' } }
+      { a: 1 }
     );
+    // Note: Authorization header is now automatically added by axios interceptor
   });
 
   test('updateAppointment uses put', async () => {

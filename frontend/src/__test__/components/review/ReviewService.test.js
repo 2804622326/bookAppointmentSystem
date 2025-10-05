@@ -7,12 +7,12 @@ jest.mock('../../../components/utils/api.js', () => ({
 
 beforeEach(() => jest.clearAllMocks());
 
-test('addReview posts with auth token', async () => {
+test('addReview posts with correct URL and data', async () => {
   localStorage.setItem('authToken', 't');
   await addReview(1, 2, { a: 1 });
   expect(api.post).toHaveBeenCalledWith(
     'reviews/submit-review?vetId=1&reviewerId=2',
-    { a: 1 },
-    { headers: { Authorization: 'Bearer t' } }
+    { a: 1 }
   );
+  // Note: Authorization header is now automatically added by axios interceptor
 });
