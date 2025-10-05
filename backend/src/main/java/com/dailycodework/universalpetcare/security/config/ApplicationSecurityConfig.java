@@ -79,7 +79,8 @@ public class ApplicationSecurityConfig {
                         .allowedOrigins(
                             "http://localhost:3000",    // Frontend container port
                             "http://localhost:5174",    // Vite dev server port
-                            "http://frontend:80"        // Container-to-container communication
+                            "http://frontend:80",       // Container-to-container communication
+                            "http://alb-pet-384183543.eu-west-1.elb.amazonaws.com" // ALB domain
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow these HTTP methods
                         .allowedHeaders("*") // Allow all headers
