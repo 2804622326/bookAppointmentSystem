@@ -48,7 +48,7 @@ public class AuthTokenFilter  extends OncePerRequestFilter {
             // JWT validation failed (expired, malformed, etc.)
             // Let Spring Security handle this through the AuthenticationEntryPoint
             // Do not throw ServletException which causes 500 error
-            logger.error("JWT authentication failed: {}", e.getMessage());
+            // JWT 验证失败，让Spring Security的AuthenticationEntryPoint处理
         }
         filterChain.doFilter(request, response);
 
