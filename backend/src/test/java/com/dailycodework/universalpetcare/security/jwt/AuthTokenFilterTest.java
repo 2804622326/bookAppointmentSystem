@@ -76,14 +76,17 @@ class AuthTokenFilterTest {
     }
 
     @Test
-    void testDoFilterInternal_invalidToken_throwsServletException() {
+    void testDoFilterInternal_invalidToken_doesNotThrowException() throws ServletException, IOException {
         String jwt = "bad.jwt.token";
         when(request.getHeader("Authorization")).thenReturn("Bearer " + jwt);
         when(jwtUtils.validateToken(jwt)).thenThrow(new RuntimeException("Token invalid"));
 
-        ServletException exception = assertThrows(ServletException.class, () ->
-                authTokenFilter.doFilterInternal(request, response, filterChain));
+        // Should not throw exception, but continue with filter chain
+        authTokenFilter.doFilterInternal(request, response, filterChain);
 
-        assertTrue(exception.getMessage().contains("Token invalid"));
+        // Verify authentication is NOT set (due to invalid token)
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        // Verify filter chain continues
+        verify(filterChain).doFilter(request, response);
     }
 }
